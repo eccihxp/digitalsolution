@@ -1,0 +1,19 @@
+div{
+    float: down;
+}
+
+#board{
+    width:800px;
+    height:800px;
+}
+.square{
+    width: 100px;
+    height: 100px;
+    float: left;
+}
+.black{
+    background-color:black;
+}
+.white{
+    background-color: lightgrey;
+}
