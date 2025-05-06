@@ -27,6 +27,7 @@ let castlingRights = {
     white: {kingside: true, queenside: true},
     black: {kingside: true, queenside: true}
 }
+//kingside: towards the h file; queenside: towards the a file
 
 let enPassantTargetSquare = ""
 //present even if there is not a piece able to capture the en passant (leave blank if not applicable, square (eg "e3") otherwise)
@@ -37,7 +38,7 @@ let halfmoveClock = 0
 let fullmoveCount = 1
 //number of moves since start of game (starts at 1)
 
-let board = {
+let startingBoard = {
     a: [21, 19, 20, 22, 17, 20, 19, 21],
     b: [18, 18, 18, 18, 18, 18, 18, 18],
     c: [0, 0, 0, 0, 0, 0, 0, 0],
@@ -47,6 +48,7 @@ let board = {
     g: [10, 10, 10, 10, 10, 10, 10, 10],
     h: [13, 11, 12, 14, 9, 12, 11, 13]
 }
+//board from the starting position of the default version of the game
 
 function toFEN(input){
     let outputFEN = ""
@@ -95,4 +97,4 @@ function toFEN(input){
     console.log(outputFEN)
 }
 
-toFEN(board)
+toFEN(startingBoard)
