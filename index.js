@@ -8,10 +8,6 @@ app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`)
 })
 
-app.get('/user', (req, res) => {
-    res.send('index.html')
-})
-
 app.post('/run-function', (req, res) => {
     console.log('Function triggered from frontend!');
     res.json({ message: 'Backend function executed successfully' }); // <-- JSON response
@@ -94,7 +90,47 @@ function toFEN(input){
     //Fullmove Counter
     outputFEN += fullmoveCount
 
-    console.log(outputFEN)
+    return outputFEN
 }
 
-toFEN(startingBoard)
+function toBoardObject(input){
+    let workingSections = input.toString().split(" ")
+
+    // Piece Position Data #region 
+    workingSections[0] = workingSections[0].toString().split("/")
+    console.log(workingSections[0])
+    let workingPositions = {
+        a: [],
+        b: [],
+        c: [],
+        d: [],
+        e: [],
+        f: [],
+        g: [],
+        h: []
+    }
+    for(let i=0;i<8;i++){
+        while(workingSections[0][i].length != 0){
+            if(isNaN(parseInt(workingSections[0][i].substring(0,1))) == false){
+                for(let k=0;k<parseInt(workingSections[0][i].substring(0,1));k++){
+                    workingPositions[String.fromCharCode(97 + i)].push(0)
+                }
+                workingSections[0][i] = workingSections[0][i].slice(1)
+            } else{
+                for(let j=0;j<7;j++){
+                    if(workingSections[0][i].substring(0,1).toLowerCase() == pieceIDs[j]){
+                        workingPositions[String.fromCharCode(97 + i)].push((workingSections[0][i].substring(0,1) == workingSections[0][i].substring(0,1).toLowerCase()) ? 16+j : 8+j)
+                        workingSections[0][i] = workingSections[0][i].slice(1)
+                        break
+                    }
+                }
+            }
+        }
+    }
+    // #endregion
+    
+    return workingPositions
+}
+
+console.log(toFEN(startingBoard))
+console.log(toBoardObject(toFEN(startingBoard)))
