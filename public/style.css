@@ -11,9 +11,13 @@ div{
     height: 100px;
     float: left;
 }
+.pieceImg{
+    width: 100px;
+    height: 100px;
+}
 .black{
-    background-color:black;
+    background-color:forestgreen;
 }
 .white{
-    background-color: lightgrey;
+    background-color: tan;
 }

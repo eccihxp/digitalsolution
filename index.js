@@ -1,7 +1,9 @@
 const express = require('express')
 const app = express()
 const port = 3000
+const {Chess} = require('chess.js')
 
+app.use(express.json())
 app.use(express.static('public'))
 
 app.listen(port, () => {
@@ -12,6 +14,19 @@ app.post('/run-function', (req, res) => {
     console.log('Function triggered from frontend!');
     res.json({ message: 'Backend function executed successfully' }); // <-- JSON response
 });
+
+app.post('/boardSetup', (req, res) => {
+    console.log('Function triggered from frontend!');
+    res.json({ message: startingBoard }); // <-- JSON response
+});
+
+app.post('/checkMoves', (req, res) => {
+    console.log('Function triggered from frontend!');
+    res.json({ message: game.moves({square: req.body.selectedSquare}) }); // <-- JSON response
+});
+
+const game = new Chess()
+//using the Chess.js package for move validation
 
 const pieceIDs = ["x", "k", "p", "n", "b", "r", "q"]
 //index of the piece name corresponds to the piece value which is added to the colour (8 for white, 16 for black) to identify piece
@@ -34,16 +49,16 @@ let halfmoveClock = 0
 let fullmoveCount = 1
 //number of moves since start of game (starts at 1)
 
-let startingBoard = {
-    a: [21, 19, 20, 22, 17, 20, 19, 21],
-    b: [18, 18, 18, 18, 18, 18, 18, 18],
-    c: [0, 0, 0, 0, 0, 0, 0, 0],
-    d: [0, 0, 0, 0, 0, 0, 0, 0],
-    e: [0, 0, 0, 0, 0, 0, 0, 0],
-    f: [0, 0, 0, 0, 0, 0, 0, 0],
-    g: [10, 10, 10, 10, 10, 10, 10, 10],
-    h: [13, 11, 12, 14, 9, 12, 11, 13]
-}
+let startingBoard = [
+    [21, 19, 20, 22, 17, 20, 19, 21],
+    [18, 18, 18, 18, 18, 18, 18, 18],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [10, 10, 10, 10, 10, 10, 10, 10],
+    [13, 11, 12, 14, 9, 12, 11, 13]
+]
 //board from the starting position of the default version of the game
 
 function toFEN(input){
@@ -54,7 +69,7 @@ function toFEN(input){
     for(let i=0;i<8;i++){
         let blankSpace = 0
         for(let j=0;j<8;j++){
-            let workingSquare = input[String.fromCharCode(97+i)][j]
+            let workingSquare = input[i][j]
             for(let k=0;k<7;k++){
                 if(workingSquare == 0){
                     blankSpace += 1
@@ -98,27 +113,27 @@ function toBoardObject(input){
 
     // #region Piece Position Data
     workingSections[0] = workingSections[0].toString().split("/")
-    let workingPositions = {
-        a: [],
-        b: [],
-        c: [],
-        d: [],
-        e: [],
-        f: [],
-        g: [],
-        h: []
-    }
+    let workingPositions = [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+    ]
     for(let i=0;i<8;i++){
         while(workingSections[0][i].length != 0){
             if(isNaN(parseInt(workingSections[0][i].substring(0,1))) == false){
                 for(let k=0;k<parseInt(workingSections[0][i].substring(0,1));k++){
-                    workingPositions[String.fromCharCode(97 + i)].push(0)
+                    workingPositions[i].push(0)
                 }
                 workingSections[0][i] = workingSections[0][i].slice(1)
             } else{
                 for(let j=0;j<7;j++){
                     if(workingSections[0][i].substring(0,1).toLowerCase() == pieceIDs[j]){
-                        workingPositions[String.fromCharCode(97 + i)].push((workingSections[0][i].substring(0,1) == workingSections[0][i].substring(0,1).toLowerCase()) ? 16+j : 8+j)
+                        workingPositions[i].push((workingSections[0][i].substring(0,1) == workingSections[0][i].substring(0,1).toLowerCase()) ? 16+j : 8+j)
                         workingSections[0][i] = workingSections[0][i].slice(1)
                         break
                     }
