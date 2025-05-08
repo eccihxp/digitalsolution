@@ -96,9 +96,8 @@ function toFEN(input){
 function toBoardObject(input){
     let workingSections = input.toString().split(" ")
 
-    // Piece Position Data #region 
+    // #region Piece Position Data
     workingSections[0] = workingSections[0].toString().split("/")
-    console.log(workingSections[0])
     let workingPositions = {
         a: [],
         b: [],
@@ -128,8 +127,27 @@ function toBoardObject(input){
         }
     }
     // #endregion
+
+    // #region Side to Move
+
+    let workingActiveSide = (workingSections[1] == "w" ? true : false)
+
+    // #endregion
+
+    // #region Castling Ability
+
+    let workingCastling = (workingSections[2] == "-" ? {white: {kingside: false, queenside: false}, black: {kingside: false, queenside: false}} : {white: {kingside: (workingSections[2].includes("K") == true ? true: false), queenside: (workingSections[2].includes("Q") == true ? true: false)}, black: {kingside: (workingSections[2].includes("k") == true ? true: false), queenside: (workingSections[2].includes("q") == true ? true: false)}})
+
+    //#endregion
     
-    return workingPositions
+    // #region En Passant Target Square
+
+    let workingEnPassant = ""
+
+    // #endregion
+
+
+    return [workingPositions, workingActiveSide, workingCastling]
 }
 
 console.log(toFEN(startingBoard))
