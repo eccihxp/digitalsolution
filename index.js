@@ -142,12 +142,23 @@ function toBoardObject(input){
     
     // #region En Passant Target Square
 
-    let workingEnPassant = ""
+    let workingEnPassant = (workingSections[3] == "-" ? "" : workingSections[3])
 
     // #endregion
 
+    // #region Halfmove Clock
 
-    return [workingPositions, workingActiveSide, workingCastling]
+    let workingHalfmoveClock = workingSections[4]
+
+    // #endregion
+
+    // #region Fullmove Counter
+
+    let workingFullmoveCounter = workingSections[5]
+
+    // #endregion
+
+    return [workingPositions, workingActiveSide, workingCastling, workingEnPassant, workingHalfmoveClock, workingFullmoveCounter]
 }
 
 console.log(toFEN(startingBoard))
