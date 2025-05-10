@@ -49,6 +49,21 @@ $("#testButton").click(function(){
     });
 })
 
+$("#makeComputerMove").on("mouseup", function(){
+    fetch("/computer", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ trigger: true })
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentBoard = data.message
+        updateBoard()
+    });
+})
+
 function updateBoard(){
     for(let i=8;i>0;i--){
         for(let j=0;j<8;j++){

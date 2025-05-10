@@ -13,6 +13,7 @@ app.listen(port, () => {
 app.post('/evaluate', (req, res) => {
     console.log('Function triggered from frontend!');
     basicEval()
+    moveSearch()
     res.json({message: eval}); // <-- JSON response
 });
 
@@ -36,12 +37,24 @@ app.post('/makeMove', (req, res) => {
     game.move((clickedSquare.toString() + req.body.moveMade.toString()).toString(), {sloppy: true})
     toBoardObject(game.fen())
     assignObject()
-    res.json({ message: theBoard}); // <-- JSON response
+    res.json({ message: theBoard }); // <-- JSON response
+});
+
+app.post('/computer', (req, res) => {
+    console.log('Function triggered from frontend!');
+    clickedSquare = ""
+    moveSearch()
+    game.move(evaluatedMove)
+    toBoardObject(game.fen())
+    assignObject()
+    res.json({ message: theBoard }); // <-- JSON response
 });
 
 let game = new Chess("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 let clickedSquare = ""
 //using the Chess.js package for move validation
+
+let evaluatedMove = ""
 
 const pieceIDs = ["x", "k", "p", "n", "b", "r", "q"]
 //index of the piece name corresponds to the piece value which is added to the colour (8 for white, 16 for black) to identify piece
@@ -311,10 +324,40 @@ function basicEval(){
             }
         }
     }
-    console.log(doubledPawnsBlack, doubledPawnsWhite, blockedPawnsBlack, blockedPawnsWhite, isolatedPawnsBlack, isolatedPawnsWhite)
-    console.log(whiteActive)
     eval = ((whiteActive==true ? 20 : -20) + (whiteEval - blackEval) - (50 * (doubledPawnsWhite + blockedPawnsWhite + isolatedPawnsWhite - doubledPawnsBlack - blockedPawnsBlack - isolatedPawnsBlack)) + (whiteActive==true ? (activeMobility-opponentMobility)*10 : (activeMobility-opponentMobility)*-10))
-    console.log(eval)
+}
+
+function moveSearch(){
+    let positionsSearched = 0
+    let moves = []
+    moves[0] = (game.moves())
+    let bestEvaluation = (whiteActive==true ? -999999 : 999999)
+    let bestMove = ""
+    for(let i=0;i<moves[0].length;i++){
+        game.move(moves[0][i])
+        moves[1] = (game.moves())
+        console.log(moves)
+        for(let j=0;j<moves[1].length;j++){
+            game.move(moves[1][j])
+            positionsSearched++
+            basicEval()
+            if(whiteActive == true){
+                if((eval)>bestEvaluation){
+                    bestMove = moves[0][i]
+                    bestEvaluation = eval
+                }
+            } else{
+                if((eval)<bestEvaluation){
+                    bestMove = moves[0][i]
+                    bestEvaluation = eval
+                }
+            }
+            game.undo()
+        }
+        game.undo()
+    }
+    evaluatedMove = bestMove
+    console.log("Best Move: " + bestMove + " Eval: " + bestEvaluation + " Positions Searched: " + positionsSearched)
 }
 
 console.log(toFEN(startingBoard))
