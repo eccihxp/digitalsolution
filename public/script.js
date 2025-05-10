@@ -9,6 +9,8 @@ let currentBoard = [
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
 
+let movableSquares = []
+
 $("body").append("<div id='board'></div>")
 for(let i=8;i>=1;i--){
     $("#board").append("<div></div>").children().last().addClass("row row"+i)
@@ -19,7 +21,7 @@ for(let i=8;i>=1;i--){
 }
 
 $("#trigger").click(function(){
-    fetch("/run-function", {
+    fetch("/evaluate", {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -29,7 +31,6 @@ $("#trigger").click(function(){
     .then(res => res.json())
     .then(data => {
         console.log(data.message);
-        $("#trigger").parent().append("<div>iosdfzuiohdfguih</div>")
     });
 })
 
@@ -56,20 +57,43 @@ function updateBoard(){
     }
 }
 
-$(".pieceImg").click(function(){
+$(".pieceImg").on("mouseup", function(){
+    let newSquare = true
     $(".pieceImg").css("background-color", "transparent")
-    console.log($(this).attr("class").split(" ")[1].substring(3,5))
-    fetch("/checkMoves", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ selectedSquare:  $(this).attr("class").split(" ")[1].substring(3,5)})
-    })
-    .then(res => res.json())
-    .then(data => {
-        for(let i=0;i<data.message.length;i++){
-            $(".img" + data.message[i].substring(data.message[i].length-2, data.message[i].length)).css("background-color", "red")
+    let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
+    for(let i=0;i<movableSquares.length;i++){
+        console.log(movableSquares[i])
+        if(clickedSquare == movableSquares[i]["to"]){
+            newSquare = false
+            fetch("/makeMove", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ moveMade:  clickedSquare})
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data.message);
+                currentBoard = data.message
+                updateBoard()
+            });
         }
-    });
+    }
+    if (newSquare = true){
+        fetch("/checkMoves", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },  
+            body: JSON.stringify({ selectedSquare:  clickedSquare})
+        })
+        .then(res => res.json())
+        .then(data => {
+            movableSquares = data.message
+            for(let i=0;i<data.message.length;i++){
+                $(".img" + data.message[i]["to"]).css("background-color", "red")
+            }
+        });
+    }
 })

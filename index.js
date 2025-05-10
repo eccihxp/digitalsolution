@@ -10,26 +10,45 @@ app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`)
 })
 
-app.post('/run-function', (req, res) => {
+app.post('/evaluate', (req, res) => {
     console.log('Function triggered from frontend!');
-    res.json({ message: 'Backend function executed successfully' }); // <-- JSON response
+    basicEval()
+    res.json({message: eval}); // <-- JSON response
 });
 
 app.post('/boardSetup', (req, res) => {
     console.log('Function triggered from frontend!');
+    game = new Chess()
+    clickedSquare = ""
+    toBoardObject("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    assignObject()
     res.json({ message: startingBoard }); // <-- JSON response
 });
 
 app.post('/checkMoves', (req, res) => {
     console.log('Function triggered from frontend!');
-    res.json({ message: game.moves({square: req.body.selectedSquare}) }); // <-- JSON response
+    clickedSquare = req.body.selectedSquare
+    res.json({ message: game.moves({verbose: true}).filter(moveFilter) }); // <-- JSON response
 });
 
-const game = new Chess()
+app.post('/makeMove', (req, res) => {
+    console.log('Function triggered from frontend!');
+    game.move((clickedSquare.toString() + req.body.moveMade.toString()).toString(), {sloppy: true})
+    toBoardObject(game.fen())
+    res.json({ message: theBoard}); // <-- JSON response
+});
+
+let game = new Chess("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+let clickedSquare = ""
 //using the Chess.js package for move validation
 
 const pieceIDs = ["x", "k", "p", "n", "b", "r", "q"]
 //index of the piece name corresponds to the piece value which is added to the colour (8 for white, 16 for black) to identify piece
+
+const pointValue = [0, 10000, 100, 350, 350, 525, 1000]
+//worth for all pieces for evaluation (folllows order of pieceIDs)
+
+let eval = 0
 
 let whiteActive = true
 //true if white turn, false if black turn
@@ -50,6 +69,17 @@ let fullmoveCount = 1
 //number of moves since start of game (starts at 1)
 
 let startingBoard = [
+    [21, 19, 20, 22, 17, 20, 19, 21],
+    [18, 18, 18, 18, 18, 18, 18, 18],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [10, 10, 10, 10, 10, 10, 10, 10],
+    [13, 11, 12, 14, 9, 12, 11, 13]
+]
+
+let theBoard = [
     [21, 19, 20, 22, 17, 20, 19, 21],
     [18, 18, 18, 18, 18, 18, 18, 18],
     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -108,12 +138,20 @@ function toFEN(input){
     return outputFEN
 }
 
+let workingSections
+let workingPositions
+let workingActiveSide
+let workingCastling
+let workingEnPassant
+let workingHalfmoveClock
+let workingFullmoveCounter
+
 function toBoardObject(input){
-    let workingSections = input.toString().split(" ")
+    workingSections = input.toString().split(" ")
 
     // #region Piece Position Data
     workingSections[0] = workingSections[0].toString().split("/")
-    let workingPositions = [
+    workingPositions = [
         [],
         [],
         [],
@@ -145,36 +183,70 @@ function toBoardObject(input){
 
     // #region Side to Move
 
-    let workingActiveSide = (workingSections[1] == "w" ? true : false)
+    workingActiveSide = (workingSections[1] == "w" ? true : false)
 
     // #endregion
 
     // #region Castling Ability
 
-    let workingCastling = (workingSections[2] == "-" ? {white: {kingside: false, queenside: false}, black: {kingside: false, queenside: false}} : {white: {kingside: (workingSections[2].includes("K") == true ? true: false), queenside: (workingSections[2].includes("Q") == true ? true: false)}, black: {kingside: (workingSections[2].includes("k") == true ? true: false), queenside: (workingSections[2].includes("q") == true ? true: false)}})
+    workingCastling = (workingSections[2] == "-" ? {white: {kingside: false, queenside: false}, black: {kingside: false, queenside: false}} : {white: {kingside: (workingSections[2].includes("K") == true ? true: false), queenside: (workingSections[2].includes("Q") == true ? true: false)}, black: {kingside: (workingSections[2].includes("k") == true ? true: false), queenside: (workingSections[2].includes("q") == true ? true: false)}})
 
     //#endregion
     
     // #region En Passant Target Square
 
-    let workingEnPassant = (workingSections[3] == "-" ? "" : workingSections[3])
+    workingEnPassant = (workingSections[3] == "-" ? "" : workingSections[3])
 
     // #endregion
 
     // #region Halfmove Clock
 
-    let workingHalfmoveClock = workingSections[4]
+    workingHalfmoveClock = workingSections[4]
 
     // #endregion
 
     // #region Fullmove Counter
 
-    let workingFullmoveCounter = workingSections[5]
+    workingFullmoveCounter = workingSections[5]
 
     // #endregion
+
+    theBoard = workingPositions
 
     return [workingPositions, workingActiveSide, workingCastling, workingEnPassant, workingHalfmoveClock, workingFullmoveCounter]
 }
 
+function assignObject(){
+    theBoard = workingPositions
+    whiteActive = workingActiveSide
+    castlingRights = workingCastling
+    enPassantTargetSquare = workingEnPassant
+    halfmoveClock = workingHalfmoveClock
+    fullmoveCount = workingFullmoveCounter
+}
+
+function basicEval(){
+    let whiteEval = 0
+    let blackEval = 0
+
+    for(let i=0;i<8;i++){
+        for(let j=0;j<8;j++){
+            if(theBoard[i][j] == 0){
+                //do nothing
+            } else if(theBoard[i][j]/8 > 2){
+                blackEval += pointValue[theBoard[i][j]%8]
+            }else{
+                whiteEval += pointValue[theBoard[i][j]%8]
+            }
+        }
+    }
+    eval = (whiteEval - blackEval + (whiteActive==true ? 20 : -20))
+    console.log(eval)
+}
+
 console.log(toFEN(startingBoard))
 console.log(toBoardObject(toFEN(startingBoard)))
+
+function moveFilter(obj){
+    return obj["from"] == clickedSquare
+}
