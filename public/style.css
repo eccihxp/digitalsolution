@@ -1,19 +1,24 @@
+body{
+    background-color: #0d0e12;
+    color: #7fbab5ff;
+}
+
 div{
     float: down;
 }
 
 #board{
-    width:800px;
-    height:800px;
+    width: 80vh;
+    aspect-ratio: 1;
 }
 .square{
-    width: 100px;
-    height: 100px;
+    width: 10vh;
+    height: 10vh;
     float: left;
 }
 .pieceImg{
-    width: 100px;
-    height: 100px;
+    width: 10vh;
+    height: 10vh;
 }
 .black{
     background-color:forestgreen;

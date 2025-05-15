@@ -16,7 +16,7 @@ for(let i=8;i>=1;i--){
     $("#board").append("<div></div>").children().last().addClass("row row"+i)
     for(let j=1;j<=8;j++){
         $(".row"+i).append("<div></div>").children().last().addClass("square " + String.fromCharCode(96+j) + i.toString() + " " + ((i+j)%2==0 ? "black" : "white"))
-        $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString())
+        $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
     }
 }
 
