@@ -9,7 +9,44 @@ let currentBoard = [
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
 
+let currentFEN = ""
+
 let movableSquares = []
+
+var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
+
+var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
+
+stockfish.addEventListener('message', function (e) {
+    console.log(e.data);
+    if(e.data === "uciok"){
+        stockfish.postMessage("ucinewgame");
+        stockfish.postMessage("isready");
+    }
+    if(e.data === "readyok"){
+        stockfish.postMessage("position name startpos")
+        stockfish.postMessage("setoption name Skill Level value 20")
+    }
+    if(e.data.includes("bestmove") == true){
+        console.log(e.data.split(" ")[1])
+        fetch("/computerMove", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ moveMade: e.data.split(" ")[1]})
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data.message);
+            currentBoard = data.message
+            updateBoard()
+        });
+    }
+    
+});
+
+stockfish.postMessage("uci");
 
 $("body").append("<div id='board'></div>")
 for(let i=8;i>=1;i--){
@@ -21,17 +58,21 @@ for(let i=8;i>=1;i--){
 }
 
 $("#trigger").click(function(){
-    fetch("/evaluate", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ trigger: true })
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log(data.message);
-    });
+    fetch("/rqFen", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ placehold:  false})
+            })
+            .then(res => res.json())
+            .then(data => {
+                currentFEN = data.message
+                console.log("FEN FOUND: " + data.message)
+                console.log("current FEN: " + currentFEN)
+                stockfish.postMessage("position fen " + currentFEN)
+                stockfish.postMessage("go depth 30")
+            });
 })
 
 $("#testButton").click(function(){
@@ -78,6 +119,7 @@ $(".pieceImg").on("mouseup", function(){
                 currentBoard = data.message
                 updateBoard()
             });
+            $("#trigger").click();
         }
     }
     if (newSquare = true){
