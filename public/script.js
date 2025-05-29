@@ -23,11 +23,11 @@ stockfish.addEventListener('message', function (e) {
         stockfish.postMessage("ucinewgame");
         stockfish.postMessage("isready");
     }
-    if(e.data === "readyok"){
+    else if(e.data === "readyok"){
         stockfish.postMessage("position name startpos")
-        stockfish.postMessage("setoption name Skill Level value 20")
+        stockfish.postMessage("setoption name Skill Level value 1")
     }
-    if(e.data.includes("bestmove") == true){
+    else if(e.data.includes("bestmove") == true){
         console.log(e.data.split(" ")[1])
         fetch("/computerMove", {
                 method: "POST",
@@ -43,7 +43,17 @@ stockfish.addEventListener('message', function (e) {
             updateBoard()
         });
     }
-    
+    else if(e.data.includes("info") == true){
+        if(e.data.includes("cp") == true){
+            console.log("evaluation is: " + e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])
+        }
+        else if(e.data.includes("mate") == true){
+            console.log("mate in: " + e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1])
+        }
+        else{
+            console.log("evaluation error")
+        }
+    }
 });
 
 stockfish.postMessage("uci");
@@ -71,7 +81,7 @@ $("#trigger").click(function(){
                 console.log("FEN FOUND: " + data.message)
                 console.log("current FEN: " + currentFEN)
                 stockfish.postMessage("position fen " + currentFEN)
-                stockfish.postMessage("go depth 30")
+                stockfish.postMessage("go depth 15")
             });
 })
 
