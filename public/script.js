@@ -8,6 +8,10 @@ let currentBoard = [
     [10, 10, 10, 10, 10, 10, 10, 10],
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
+let currentTime = {
+    wtime: 600000,
+    btime: 600000
+}
 
 let currentFEN = ""
 
@@ -41,14 +45,27 @@ stockfish.addEventListener('message', function (e) {
             console.log(data.message);
             currentBoard = data.message
             updateBoard()
+            switchTimer()
         });
     }
     else if(e.data.includes("info") == true){
+        let whiteActive = 1
+        fetch("/rqSide", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({placehold: true})
+        })
+        .then(res => res.json())
+        .then(data => {
+            whiteActive = data.message
+        });
         if(e.data.includes("cp") == true){
-            console.log("evaluation is: " + e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])
+            console.log("evaluation is: " + (e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive))
         }
         else if(e.data.includes("mate") == true){
-            console.log("mate in: " + e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1])
+            console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
         }
         else{
             console.log("evaluation error")
@@ -57,6 +74,62 @@ stockfish.addEventListener('message', function (e) {
 });
 
 stockfish.postMessage("uci");
+
+function updateBoard(){
+    for(let i=8;i>0;i--){
+        for(let j=0;j<8;j++){
+            $(".img" + String.fromCharCode(97+j) + i.toString()).attr("src", currentBoard[8-i][j] + ".png")
+        }
+    }
+}
+
+function updateTime(){
+    fetch("/updateTime", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({placehold: true})
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentTime["wtime"] = data.wtime
+            currentTime["btime"] = data.btime
+            console.log("white time: " + data.wtime + ", black time: " + data.btime);
+        });
+}
+
+function initTimer(){
+    fetch("/initTimer ", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({placehold: true})
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentTime["wtime"] = data.wtime
+            currentTime["btime"] = data.btime
+            console.log("white time: " + data.wtime + ", black time: " + data.btime);
+        });
+}
+
+function switchTimer(){
+    fetch("/switchTimer ", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({placehold: true})
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentTime["wtime"] = data.wtime
+            currentTime["btime"] = data.btime
+            console.log("white time: " + data.wtime + ", black time: " + data.btime);
+        });
+}
 
 $("body").append("<div id='board'></div>")
 for(let i=8;i>=1;i--){
@@ -80,8 +153,9 @@ $("#trigger").click(function(){
                 currentFEN = data.message
                 console.log("FEN FOUND: " + data.message)
                 console.log("current FEN: " + currentFEN)
+                switchTimer()
                 stockfish.postMessage("position fen " + currentFEN)
-                stockfish.postMessage("go depth 15")
+                stockfish.postMessage("go depth 11")
             });
 })
 
@@ -97,16 +171,9 @@ $("#testButton").click(function(){
     .then(data => {
         currentBoard = data.message
         updateBoard()
+        initTimer()
     });
 })
-
-function updateBoard(){
-    for(let i=8;i>0;i--){
-        for(let j=0;j<8;j++){
-            $(".img" + String.fromCharCode(97+j) + i.toString()).attr("src", currentBoard[8-i][j] + ".png")
-        }
-    }
-}
 
 $(".pieceImg").on("mouseup", function(){
     let newSquare = true

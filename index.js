@@ -2,6 +2,9 @@ const express = require('express')
 const app = express()
 const port = 3000
 const {Chess} = require('chess.js')
+const {Timer} = require('timer-node')
+
+let chessClock = {}
 
 app.use(express.json())
 app.use(express.static('public'))
@@ -13,6 +16,43 @@ app.listen(port, () => {
 app.post('/evaluate', (req, res) => {
     console.log('Evaluation');
     res.json({message: "Evaluation"}); // <-- JSON response
+});
+
+app.post('/initTimer', (req, res) => {
+    console.log('Creating Timer');
+    chessClock["w"] = new Timer()
+    chessClock["w"].start()
+    chessClock["b"] = new Timer()
+    console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
+    res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
+});
+
+app.post('/updateTime', (req, res) => {
+    console.log('Checking Time');
+    console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
+    res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
+});
+
+app.post('/switchTimer', (req, res) => {
+    console.log('Switching Timer States');
+    if(chessClock["w"].isRunning() == true){
+        chessClock["w"].pause()
+        if(chessClock["b"].isStarted() == false){
+            chessClock["b"].start()
+        } else{
+            chessClock["b"].resume()
+        }
+    } else{
+        chessClock["b"].pause()
+        chessClock["w"].resume()
+    }
+    console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
+    res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
+});
+
+app.post('/rqSide', (req, res) => {
+    console.log('Requesting Side to Move: ' + (game.turn() == "w" ? 1 : -1));
+    res.json({message: (game.turn() == "w" ? 1 : -1)}); // <-- JSON response
 });
 
 app.post('/rqFen', (req, res) => {

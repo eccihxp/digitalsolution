@@ -15,6 +15,7 @@
     "express": "^5.1.0",
     "mongoose": "^8.14.1",
     "stockfish": "^11.0.0",
+    "timer-node": "^5.0.9",
     "web-worker": "^1.5.0"
   }
 }
