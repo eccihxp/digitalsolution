@@ -4,7 +4,7 @@ const port = 3000
 const {Chess} = require('chess.js')
 const {Timer} = require('timer-node')
 
-let chessClock = {}
+let chessClock = {w: new Timer(), b: new Timer()}
 
 app.use(express.json())
 app.use(express.static('public'))
@@ -27,9 +27,15 @@ app.post('/initTimer', (req, res) => {
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
-app.post('/updateTime', (req, res) => {
-    console.log('Checking Time');
+app.post('/resetTimer', (req, res) => {
+    console.log('Resetting Timer');
+    chessClock["w"] = new Timer()
+    chessClock["b"] = new Timer()
     console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
+    res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
+});
+
+app.post('/updateTime', (req, res) => {
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 

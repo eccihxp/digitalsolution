@@ -26,3 +26,28 @@ div{
 .white{
     background-color: tan;
 }
+.boardAlignH{
+    float: left;
+}
+#rightPanel{
+    width: 40vh;
+}
+#whiteTime{
+    width: 40vh;
+    height: 5vh;
+    font-size: 4vh;
+    vertical-align: middle;
+    text-align: center;
+    background-color: tan;
+}
+#blackTime{
+    width: 40vh;
+    height: 5vh;
+    font-size: 4vh;
+    vertical-align: middle;
+    text-align: center;
+    background-color: forestgreen;
+}
+.inRightPanel{
+    width:40vh;
+}

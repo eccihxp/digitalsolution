@@ -21,6 +21,10 @@ var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint
 
 var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
 
+$(document).ready(function(e){
+    resetTimer()
+})
+
 stockfish.addEventListener('message', function (e) {
     console.log(e.data);
     if(e.data === "uciok"){
@@ -95,7 +99,7 @@ function updateTime(){
         .then(data => {
             currentTime["wtime"] = data.wtime
             currentTime["btime"] = data.btime
-            console.log("white time: " + data.wtime + ", black time: " + data.btime);
+            assignTime()
         });
 }
 
@@ -112,7 +116,21 @@ function initTimer(){
             currentTime["wtime"] = data.wtime
             currentTime["btime"] = data.btime
             console.log("white time: " + data.wtime + ", black time: " + data.btime);
+            assignTime()
         });
+}
+
+async function timerUpdates() {
+    while (true) {
+        console.log("Running forever...");
+        updateTime()
+      await sleep(10); // Sleep for 1 second
+    }
+} 
+timerUpdates();
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function switchTimer(){
@@ -128,10 +146,33 @@ function switchTimer(){
             currentTime["wtime"] = data.wtime
             currentTime["btime"] = data.btime
             console.log("white time: " + data.wtime + ", black time: " + data.btime);
+            assignTime()
         });
 }
 
-$("body").append("<div id='board'></div>")
+function resetTimer(){
+    fetch("/resetTimer ", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({placehold: true})
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentTime["wtime"] = data.wtime
+            currentTime["btime"] = data.btime
+            console.log("white time: " + data.wtime + ", black time: " + data.btime);
+            assignTime()
+        });
+}
+
+function assignTime(){
+    $("#whiteTime").html(currentTime["wtime"] + "ms")
+    $("#blackTime").html(currentTime["btime"] + "ms")
+}
+
+$("body").append("<div id='board'></div>").children().last().addClass("boardAlignH")
 for(let i=8;i>=1;i--){
     $("#board").append("<div></div>").children().last().addClass("row row"+i)
     for(let j=1;j<=8;j++){
@@ -139,6 +180,12 @@ for(let i=8;i>=1;i--){
         $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
     }
 }
+$("body").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
+$("#rightPanel").append("<div id='setupButtonContainer'></div").children().last().addClass("inRightPanel")
+$("#setupButtonContainer").append("<button id='testButton'>Set Up Board</button>")
+$("#setupButtonContainer").append("<button id='trigger'>Evaluate Position</button>")
+$("#rightPanel").append("<div id='whiteTime'></div").children().last().addClass("inRightPanel")
+$("#rightPanel").append("<div id='blackTime'></div").children().last().addClass("inRightPanel")
 
 $("#trigger").click(function(){
     fetch("/rqFen", {
