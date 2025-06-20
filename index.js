@@ -35,7 +35,7 @@ app.post('/resetTimer', (req, res) => {
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
-app.post('/updateTime', (req, res) => {
+app.post('/updateTimer', (req, res) => {
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
