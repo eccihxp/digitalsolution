@@ -13,6 +13,22 @@ app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`)
 })
 
+app.post('/history', (req, res) => {
+    console.log('Getting Move History');
+    res.json({message: game.history()}); // <-- JSON response
+});
+
+app.post('/convert', (req, res) => {
+    console.log('Converting Engine Line');
+    let evalGame = new Chess(game.fen())
+    console.log(req.body.line)
+    console.log(req.body.line.split(" "))
+    req.body.line.split(" ").map(function(e){
+        evalGame.move(e)
+    })
+    res.json({message: evalGame.history()}); // <-- JSON response
+});
+
 app.post('/evaluate', (req, res) => {
     console.log('Evaluation');
     res.json({message: "Evaluation"}); // <-- JSON response

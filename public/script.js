@@ -9,20 +9,26 @@ let currentBoard = [
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
 let currentTime = {
-    wtime: 600000,
-    btime: 600000
+    wtime: 120000,
+    btime: 120000
+}
+let startingTime = {
+    wtime: 120000,
+    btime: 120000
 }
 
 let currentFEN = ""
 
 let movableSquares = []
 
+let moveHistory = ""
+
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
 var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
 
 $(document).ready(function(e){
-    resetTimer()
+    timeFetch("resetTimer") 
 })
 
 stockfish.addEventListener('message', function (e) {
@@ -34,6 +40,7 @@ stockfish.addEventListener('message', function (e) {
     else if(e.data === "readyok"){
         stockfish.postMessage("position name startpos")
         stockfish.postMessage("setoption name Skill Level value 1")
+        stockfish.postMessage("setoption name MultiPV value 5")
     }
     else if(e.data.includes("bestmove") == true){
         console.log(e.data.split(" ")[1])
@@ -46,34 +53,75 @@ stockfish.addEventListener('message', function (e) {
         })
         .then(res => res.json())
         .then(data => {
-            console.log(data.message);
             currentBoard = data.message
             updateBoard()
-            switchTimer()
+            timeFetch("switchTimer")
         });
     }
     else if(e.data.includes("info") == true){
-        let whiteActive = 1
-        fetch("/rqSide", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({placehold: true})
+        let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
+        fetch("/history", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: null
         })
         .then(res => res.json())
         .then(data => {
-            whiteActive = data.message
+            console.log(data.message)
+            moveHistory = data.message
         });
-        if(e.data.includes("cp") == true){
-            console.log("evaluation is: " + (e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive))
+        if(pv==1){
+            let whiteActive = 1
+            fetch("/rqSide", {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({placehold: true})
+            })
+            .then(res => res.json())
+            .then(data => {
+                whiteActive = data.message
+            });
+            if(e.data.includes("cp") == true){
+                let eval = (e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive)/100
+                console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
+                $("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
+                console.log("evaluation is: " + eval)
+            }
+            else if(e.data.includes("mate") == true){
+                console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
+                $("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
+            }
+            else{
+                console.log("evaluation error")
+            }
         }
-        else if(e.data.includes("mate") == true){
-            console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
-        }
-        else{
-            console.log("evaluation error")
-        }
+        console.log(e.data.split(" pv ")[1])
+        fetch("/convert", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({line: e.data.split(" pv ")[1]})
+        })
+        .then(res => res.json())
+        .then(data => {
+            let lineOutput = moveHistory.concat(data.message)
+            let lineOutputString = "1. ";
+            let moveNo = 1
+            for(let i=1;i<lineOutput.length+1;i++){
+                if(i%2==1 && i!=1){
+                    moveNo++
+                    lineOutputString += " " + moveNo + ". "
+                }
+                lineOutputString += lineOutput[i-1] + " "
+            }
+            $("#line" + pv).html(lineOutputString)
+            console.log(data.message)
+        });
     }
 });
 
@@ -87,91 +135,42 @@ function updateBoard(){
     }
 }
 
-function updateTime(){
-    fetch("/updateTime", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({placehold: true})
-        })
-        .then(res => res.json())
-        .then(data => {
-            currentTime["wtime"] = data.wtime
-            currentTime["btime"] = data.btime
-            assignTime()
-        });
-}
-
-function initTimer(){
-    fetch("/initTimer ", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({placehold: true})
-        })
-        .then(res => res.json())
-        .then(data => {
-            currentTime["wtime"] = data.wtime
-            currentTime["btime"] = data.btime
-            console.log("white time: " + data.wtime + ", black time: " + data.btime);
-            assignTime()
-        });
-}
-
 async function timerUpdates() {
     while (true) {
-        console.log("Running forever...");
-        updateTime()
-      await sleep(10); // Sleep for 1 second
+        timeFetch("updateTimer")
+        await new Promise(resolve => setTimeout(resolve, 1/604))
     }
 } 
 timerUpdates();
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function switchTimer(){
-    fetch("/switchTimer ", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({placehold: true})
-        })
+function timeFetch(label){
+    fetch(("/" + label), {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({placehold: true})
+    })
         .then(res => res.json())
         .then(data => {
-            currentTime["wtime"] = data.wtime
-            currentTime["btime"] = data.btime
-            console.log("white time: " + data.wtime + ", black time: " + data.btime);
+            currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
+            currentTime["btime"] = (startingTime["btime"]-data.btime)
             assignTime()
-        });
-}
-
-function resetTimer(){
-    fetch("/resetTimer ", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({placehold: true})
-        })
-        .then(res => res.json())
-        .then(data => {
-            currentTime["wtime"] = data.wtime
-            currentTime["btime"] = data.btime
-            console.log("white time: " + data.wtime + ", black time: " + data.btime);
-            assignTime()
-        });
+    });
 }
 
 function assignTime(){
-    $("#whiteTime").html(currentTime["wtime"] + "ms")
-    $("#blackTime").html(currentTime["btime"] + "ms")
+    //console.log(Math.floor(currentTime["wtime"]/60000) + ":" + Math.floor(Math.floor(currentTime["wtime"]%60000)/1000) + "." + Math.floor(currentTime["wtime"]%1000))
+    let m = {w: Math.floor(currentTime["wtime"]/60000), b: Math.floor(currentTime["btime"]/60000)}
+    let s = {w: Math.floor(Math.floor(currentTime["wtime"]%60000)/1000), b: Math.floor(Math.floor(currentTime["btime"]%60000)/1000)}
+    let ms = {w: Math.floor(currentTime["wtime"]%1000), b: Math.floor(currentTime["btime"]%1000)}
+    $("#whiteTime").html((m.w<10 ? "0"+m.w : m.w ) + ":" + (s.w<10 ? "0"+s.w : s.w) + "." + (ms.w.toString().length==3 ? ms.w : (ms.w.toString().length==2? "0" + ms.w : "00" + ms.w)))
+    $("#blackTime").html((m.b<10 ? "0"+m.b : m.b ) + ":" + (s.b<10 ? "0"+s.b : s.b) + "." + (ms.b.toString().length==3 ? ms.b : (ms.b.toString().length==2? "0" + ms.b : "00" + ms.b)))
 }
 
+$("body").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer")
+$("body").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH")
+$("#evalLeft").append("<div id='evalLeftFill'></div>")
 $("body").append("<div id='board'></div>").children().last().addClass("boardAlignH")
 for(let i=8;i>=1;i--){
     $("#board").append("<div></div>").children().last().addClass("row row"+i)
@@ -180,12 +179,22 @@ for(let i=8;i>=1;i--){
         $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
     }
 }
+$("body").append("<div id='vspacer2'></div>").children().last().addClass("boardAlignH vspacer")
 $("body").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
-$("#rightPanel").append("<div id='setupButtonContainer'></div").children().last().addClass("inRightPanel")
-$("#setupButtonContainer").append("<button id='testButton'>Set Up Board</button>")
-$("#setupButtonContainer").append("<button id='trigger'>Evaluate Position</button>")
-$("#rightPanel").append("<div id='whiteTime'></div").children().last().addClass("inRightPanel")
-$("#rightPanel").append("<div id='blackTime'></div").children().last().addClass("inRightPanel")
+$("#rightPanel").append("<div id='engineDetails'></div").children().last().addClass("inRightPanel")
+$("#rightPanel").append("<div id='line1'></div").children().last().addClass("inRightPanel line")
+$("#rightPanel").append("<div id='line2'></div").children().last().addClass("inRightPanel line")
+$("#rightPanel").append("<div id='line3'></div").children().last().addClass("inRightPanel line")
+$("#rightPanel").append("<div id='line4'></div").children().last().addClass("inRightPanel line")
+$("#rightPanel").append("<div id='line5'></div").children().last().addClass("inRightPanel line")
+$("#rightPanel").append("<div id='moveHistoryContainer'></div").children().last().addClass("inRightPanel")
+$("#rightPanel").append("<div id='timerContainer'></div>").children().last().addClass("inRightPanel")
+$("#timerContainer").append("<div id='whiteTime'></div>").children().last().addClass("timer")
+$("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
+$("#rightPanel").append("<div id='gameDetails'></div").children().last().addClass("inRightPanel")
+$("#gameDetails").append("<button id='testButton'>Set Up Board</button>")
+$("#gameDetails").append("<button id='trigger'>Evaluate Position</button>")
+$("body").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
 
 $("#trigger").click(function(){
     fetch("/rqFen", {
@@ -200,9 +209,11 @@ $("#trigger").click(function(){
                 currentFEN = data.message
                 console.log("FEN FOUND: " + data.message)
                 console.log("current FEN: " + currentFEN)
-                switchTimer()
+                timeFetch("switchTimer")
                 stockfish.postMessage("position fen " + currentFEN)
-                stockfish.postMessage("go depth 11")
+                console.log(String(currentTime["wtime"]))
+                console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+                stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
             });
 })
 
@@ -218,7 +229,7 @@ $("#testButton").click(function(){
     .then(data => {
         currentBoard = data.message
         updateBoard()
-        initTimer()
+        timeFetch("initTimer")
     });
 })
 

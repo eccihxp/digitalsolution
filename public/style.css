@@ -9,7 +9,17 @@ div{
 
 #board{
     width: 80vh;
-    aspect-ratio: 1;
+    aspect-ratio: 1
+}
+#evalLeft{
+    height: 80vh;
+    width: 2.5vh;
+    background-color: white;
+}
+#evalLeftFill{
+    width: 100%;
+    height: 50%;
+    background-color: grey;
 }
 .square{
     width: 10vh;
@@ -27,27 +37,79 @@ div{
     background-color: tan;
 }
 .boardAlignH{
+    height: 80vh;
     float: left;
 }
 #rightPanel{
-    width: 40vh;
+    width: 80vh;
 }
 #whiteTime{
-    width: 40vh;
-    height: 5vh;
-    font-size: 4vh;
-    vertical-align: middle;
-    text-align: center;
     background-color: tan;
 }
 #blackTime{
-    width: 40vh;
-    height: 5vh;
-    font-size: 4vh;
-    vertical-align: middle;
-    text-align: center;
     background-color: forestgreen;
 }
 .inRightPanel{
-    width:40vh;
+    width:80vh;
+}
+#engineDetails{
+    width: 100%;
+    height: 10vh;
+}
+.line{
+    height: 5vh;
+    width: 100%;
+}
+#moveHistoryContainer{
+    width: 100%;
+    height: 30vh;
+}
+#timerContainer{
+    width: 100%;
+    height: 5vh;
+}
+.timer{
+    width: 50%;
+    height: 100%;
+    font-size: 4vh;
+    vertical-align: middle;
+    text-align: center;
+    float: left;
+}
+#gameDetails{
+    width: 100%;
+    height: 10vh;
+}
+.vspacer{
+    width: 5vh;
+}
+#vspacer2{
+    width: 2.5vh;
+}
+#engineDetails{
+    background-color:darkgrey;
+}
+#line1{
+    background-color: lightgrey;
+}
+#line2{
+    background-color: darkgrey;
+}
+#line3{
+    background-color: lightgrey;
+}
+#line4{
+    background-color: darkgrey;
+}
+#line5{
+    background-color: lightgrey;
+}
+#moveHistoryContainer{
+    background-color: darkgrey;
+}
+#timerContainer{
+    background-color: lightgrey;
+}
+#gameDetails{
+    background-color: darkgrey;
 }
