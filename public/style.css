@@ -57,12 +57,30 @@ div{
     height: 10vh;
 }
 .line{
-    height: 5vh;
+    height: 3vh;
     width: 100%;
+    color:black;
+    font-size: 2.5vh;
+    vertical-align: middle;
+    line-height:3vh;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+.line::-webkit-scrollbar{
+    display: none;
 }
 #moveHistoryContainer{
     width: 100%;
-    height: 30vh;
+    min-height: 40vh;
+    max-height: 40vh;
+    overflow-y: scroll;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+#moveHistoryContainer::-webkit-scrollbar{
+    display: none;
 }
 #timerContainer{
     width: 100%;
@@ -106,6 +124,19 @@ div{
 }
 #moveHistoryContainer{
     background-color: darkgrey;
+}
+.historyColumn{
+    width: 50%;
+    min-height: 100%;
+    float: left;
+}
+.mhEntry{
+    height: 3.3333333vh;
+    color: black;
+    font-size: 2.6666666667vh;
+    vertical-align:middle;
+    line-height: 3.333333333333333333vh;
+    text-align:center;
 }
 #timerContainer{
     background-color: lightgrey;

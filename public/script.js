@@ -20,12 +20,17 @@ let startingTime = {
 let currentFEN = ""
 
 let movableSquares = []
+let status = ""
 
 let moveHistory = ""
+let mhWhite = []
+let mhBlack = []
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
 var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
+
+initialisePage()
 
 $(document).ready(function(e){
     timeFetch("resetTimer") 
@@ -33,6 +38,9 @@ $(document).ready(function(e){
 
 stockfish.addEventListener('message', function (e) {
     console.log(e.data);
+    setTimeout(() => {
+        updateHistory()
+    }, 100);
     if(e.data === "uciok"){
         stockfish.postMessage("ucinewgame");
         stockfish.postMessage("isready");
@@ -43,7 +51,7 @@ stockfish.addEventListener('message', function (e) {
         stockfish.postMessage("setoption name MultiPV value 5")
     }
     else if(e.data.includes("bestmove") == true){
-        console.log(e.data.split(" ")[1])
+        //console.log(e.data.split(" ")[1])
         fetch("/computerMove", {
                 method: "POST",
                 headers: {
@@ -56,9 +64,13 @@ stockfish.addEventListener('message', function (e) {
             currentBoard = data.message
             updateBoard()
             timeFetch("switchTimer")
+            setTimeout(() => {
+                updateHistory()
+            }, 100);
         });
     }
     else if(e.data.includes("info") == true){
+        updateHistory()
         let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
         fetch("/history", {
             method: "POST",
@@ -69,7 +81,7 @@ stockfish.addEventListener('message', function (e) {
         })
         .then(res => res.json())
         .then(data => {
-            console.log(data.message)
+            //console.log(data.message)
             moveHistory = data.message
         });
         if(pv==1){
@@ -87,19 +99,31 @@ stockfish.addEventListener('message', function (e) {
             });
             if(e.data.includes("cp") == true){
                 let eval = (e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive)/100
-                console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
-                $("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
-                console.log("evaluation is: " + eval)
+                //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
+                //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
+                $("#evalLeftFill").animate({
+                    height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
+                    }, {
+                    duration: 100,
+                    easing: "swing"
+                })
+                //console.log("evaluation is: " + eval)
             }
             else if(e.data.includes("mate") == true){
-                console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
-                $("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
+                //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
+                //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
+                $("#evalLeftFill").animate({
+                    height: (whiteActive==true ? "100%" : "0%")
+                    }, {
+                    duration: 100,
+                    easing: "swing"
+                })
             }
             else{
-                console.log("evaluation error")
+                //console.log("evaluation error")
             }
         }
-        console.log(e.data.split(" pv ")[1])
+        //console.log(e.data.split(" pv ")[1])
         fetch("/convert", {
             method: "POST",
             headers: {
@@ -120,12 +144,47 @@ stockfish.addEventListener('message', function (e) {
                 lineOutputString += lineOutput[i-1] + " "
             }
             $("#line" + pv).html(lineOutputString)
-            console.log(data.message)
+            //console.log(data.message)
         });
     }
 });
 
 stockfish.postMessage("uci");
+
+function updateHistory(){
+    fetch("/history", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: null
+    })
+        .then(res => res.json())
+        .then(data => {
+            //console.log(data.message)
+            moveHistory = data.message
+    });
+    mhWhite = []
+    mhBlack = []
+    for(let i=0;i<moveHistory.length;i++){
+        console.log(i)
+        if(i%2==0){
+            mhWhite.push(moveHistory[i])
+        } else{
+            mhBlack.push(moveHistory[i])
+        }
+        console.log(moveHistory)
+        //console.log(mhWhite)
+        //console.log(mhBlack)
+        $(".historyColumn").empty()
+        mhBlack.map(function(cv, index, arr){
+            $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+        })
+        mhWhite.map(function(cv, index, arr){
+            $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+        })
+    }
+}
 
 function updateBoard(){
     for(let i=8;i>0;i--){
@@ -138,7 +197,7 @@ function updateBoard(){
 async function timerUpdates() {
     while (true) {
         timeFetch("updateTimer")
-        await new Promise(resolve => setTimeout(resolve, 1/604))
+        await new Promise(resolve => setTimeout(resolve, 1/60))
     }
 } 
 timerUpdates();
@@ -160,7 +219,7 @@ function timeFetch(label){
 }
 
 function assignTime(){
-    //console.log(Math.floor(currentTime["wtime"]/60000) + ":" + Math.floor(Math.floor(currentTime["wtime"]%60000)/1000) + "." + Math.floor(currentTime["wtime"]%1000))
+    ////console.log(Math.floor(currentTime["wtime"]/60000) + ":" + Math.floor(Math.floor(currentTime["wtime"]%60000)/1000) + "." + Math.floor(currentTime["wtime"]%1000))
     let m = {w: Math.floor(currentTime["wtime"]/60000), b: Math.floor(currentTime["btime"]/60000)}
     let s = {w: Math.floor(Math.floor(currentTime["wtime"]%60000)/1000), b: Math.floor(Math.floor(currentTime["btime"]%60000)/1000)}
     let ms = {w: Math.floor(currentTime["wtime"]%1000), b: Math.floor(currentTime["btime"]%1000)}
@@ -168,35 +227,56 @@ function assignTime(){
     $("#blackTime").html((m.b<10 ? "0"+m.b : m.b ) + ":" + (s.b<10 ? "0"+s.b : s.b) + "." + (ms.b.toString().length==3 ? ms.b : (ms.b.toString().length==2? "0" + ms.b : "00" + ms.b)))
 }
 
-$("body").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer")
-$("body").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH")
-$("#evalLeft").append("<div id='evalLeftFill'></div>")
-$("body").append("<div id='board'></div>").children().last().addClass("boardAlignH")
-for(let i=8;i>=1;i--){
-    $("#board").append("<div></div>").children().last().addClass("row row"+i)
-    for(let j=1;j<=8;j++){
-        $(".row"+i).append("<div></div>").children().last().addClass("square " + String.fromCharCode(96+j) + i.toString() + " " + ((i+j)%2==0 ? "black" : "white"))
-        $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
+function initialisePage(){
+    $("body").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer")
+    $("body").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH")
+    $("#evalLeft").append("<div id='evalLeftFill'></div>")
+    $("body").append("<div id='board'></div>").children().last().addClass("boardAlignH")
+    for(let i=8;i>=1;i--){
+        $("#board").append("<div></div>").children().last().addClass("row row"+i)
+        for(let j=1;j<=8;j++){
+            $(".row"+i).append("<div></div>").children().last().addClass("square " + String.fromCharCode(96+j) + i.toString() + " " + ((i+j)%2==0 ? "black" : "white"))
+            $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
+        }
     }
+    $("body").append("<div id='vspacer2'></div>").children().last().addClass("boardAlignH vspacer")
+    $("body").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
+    $("#rightPanel").append("<div id='engineDetails'></div>").children().last().addClass("inRightPanel")
+    $("#rightPanel").append("<div id='line1'></div>").children().last().addClass("inRightPanel line")
+    $("#rightPanel").append("<div id='line2'></div>").children().last().addClass("inRightPanel line")
+    $("#rightPanel").append("<div id='line3'></div>").children().last().addClass("inRightPanel line")
+    $("#rightPanel").append("<div id='line4'></div>").children().last().addClass("inRightPanel line")
+    $("#rightPanel").append("<div id='line5'></div>").children().last().addClass("inRightPanel line")
+    $("#rightPanel").append("<div id='moveHistoryContainer'></div>").children().last().addClass("inRightPanel")
+    $("#moveHistoryContainer").append("<div id='moveHistoryLeft'></div>").children().last().addClass("historyColumn")
+    $("#moveHistoryContainer").append("<div id='moveHistoryRight'></div>").children().last().addClass("historyColumn")
+    $("#rightPanel").append("<div id='timerContainer'></div>").children().last().addClass("inRightPanel")
+    $("#timerContainer").append("<div id='whiteTime'></div>").children().last().addClass("timer")
+    $("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
+    $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
+    $("#gameDetails").append("<button id='testButton'>Set Up Board</button>")
+    $("#gameDetails").append("<button id='trigger'>Evaluate Position</button>")
+    $("body").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
+    $(".line").empty()
+    $(".mhEntry").remove()
+}   
+
+function gamestate(){
+    fetch(("/gamestate"), {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({placehold: true})
+    })
+        .then(res => res.json())
+        .then(data => {
+            status = data.message
+    });
 }
-$("body").append("<div id='vspacer2'></div>").children().last().addClass("boardAlignH vspacer")
-$("body").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
-$("#rightPanel").append("<div id='engineDetails'></div").children().last().addClass("inRightPanel")
-$("#rightPanel").append("<div id='line1'></div").children().last().addClass("inRightPanel line")
-$("#rightPanel").append("<div id='line2'></div").children().last().addClass("inRightPanel line")
-$("#rightPanel").append("<div id='line3'></div").children().last().addClass("inRightPanel line")
-$("#rightPanel").append("<div id='line4'></div").children().last().addClass("inRightPanel line")
-$("#rightPanel").append("<div id='line5'></div").children().last().addClass("inRightPanel line")
-$("#rightPanel").append("<div id='moveHistoryContainer'></div").children().last().addClass("inRightPanel")
-$("#rightPanel").append("<div id='timerContainer'></div>").children().last().addClass("inRightPanel")
-$("#timerContainer").append("<div id='whiteTime'></div>").children().last().addClass("timer")
-$("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
-$("#rightPanel").append("<div id='gameDetails'></div").children().last().addClass("inRightPanel")
-$("#gameDetails").append("<button id='testButton'>Set Up Board</button>")
-$("#gameDetails").append("<button id='trigger'>Evaluate Position</button>")
-$("body").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
 
 $("#trigger").click(function(){
+    updateBoard()
     fetch("/rqFen", {
                 method: "POST",
                 headers: {
@@ -207,12 +287,12 @@ $("#trigger").click(function(){
             .then(res => res.json())
             .then(data => {
                 currentFEN = data.message
-                console.log("FEN FOUND: " + data.message)
-                console.log("current FEN: " + currentFEN)
+                //console.log("FEN FOUND: " + data.message)
+                //console.log("current FEN: " + currentFEN)
                 timeFetch("switchTimer")
                 stockfish.postMessage("position fen " + currentFEN)
-                console.log(String(currentTime["wtime"]))
-                console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+                //console.log(String(currentTime["wtime"]))
+                //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
                 stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
             });
 })
@@ -229,7 +309,10 @@ $("#testButton").click(function(){
     .then(data => {
         currentBoard = data.message
         updateBoard()
+        updateHistory
         timeFetch("initTimer")
+        $(".line").empty()
+        $(".mhEntry").remove()
     });
 })
 
@@ -238,7 +321,7 @@ $(".pieceImg").on("mouseup", function(){
     $(".pieceImg").css("background-color", "transparent")
     let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
     for(let i=0;i<movableSquares.length;i++){
-        console.log(movableSquares[i])
+        //console.log(movableSquares[i])
         if(clickedSquare == movableSquares[i]["to"]){
             newSquare = false
             fetch("/makeMove", {
@@ -250,7 +333,7 @@ $(".pieceImg").on("mouseup", function(){
             })
             .then(res => res.json())
             .then(data => {
-                console.log(data.message);
+                //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
             });
