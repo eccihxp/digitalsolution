@@ -9,12 +9,12 @@ let currentBoard = [
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
 let currentTime = {
-    wtime: 120000,
-    btime: 120000
+    wtime: 12000,
+    btime: 12000
 }
 let startingTime = {
-    wtime: 120000,
-    btime: 120000
+    wtime: 12000,
+    btime: 12000
 }
 
 let currentFEN = ""
@@ -25,6 +25,7 @@ let status = ""
 let moveHistory = ""
 let mhWhite = []
 let mhBlack = []
+let runTimer = true
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
@@ -38,9 +39,6 @@ $(document).ready(function(e){
 
 stockfish.addEventListener('message', function (e) {
     console.log(e.data);
-    setTimeout(() => {
-        updateHistory()
-    }, 100);
     if(e.data === "uciok"){
         stockfish.postMessage("ucinewgame");
         stockfish.postMessage("isready");
@@ -66,11 +64,10 @@ stockfish.addEventListener('message', function (e) {
             timeFetch("switchTimer")
             setTimeout(() => {
                 updateHistory()
-            }, 100);
+            }, 10);
         });
     }
     else if(e.data.includes("info") == true){
-        updateHistory()
         let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
         fetch("/history", {
             method: "POST",
@@ -195,9 +192,9 @@ function updateBoard(){
 }
 
 async function timerUpdates() {
-    while (true) {
+    while (runTimer) {
         timeFetch("updateTimer")
-        await new Promise(resolve => setTimeout(resolve, 1/60))
+        await new Promise(resolve => setTimeout(resolve, 1000/60))
     }
 } 
 timerUpdates();
@@ -219,12 +216,34 @@ function timeFetch(label){
 }
 
 function assignTime(){
-    ////console.log(Math.floor(currentTime["wtime"]/60000) + ":" + Math.floor(Math.floor(currentTime["wtime"]%60000)/1000) + "." + Math.floor(currentTime["wtime"]%1000))
-    let m = {w: Math.floor(currentTime["wtime"]/60000), b: Math.floor(currentTime["btime"]/60000)}
-    let s = {w: Math.floor(Math.floor(currentTime["wtime"]%60000)/1000), b: Math.floor(Math.floor(currentTime["btime"]%60000)/1000)}
-    let ms = {w: Math.floor(currentTime["wtime"]%1000), b: Math.floor(currentTime["btime"]%1000)}
-    $("#whiteTime").html((m.w<10 ? "0"+m.w : m.w ) + ":" + (s.w<10 ? "0"+s.w : s.w) + "." + (ms.w.toString().length==3 ? ms.w : (ms.w.toString().length==2? "0" + ms.w : "00" + ms.w)))
-    $("#blackTime").html((m.b<10 ? "0"+m.b : m.b ) + ":" + (s.b<10 ? "0"+s.b : s.b) + "." + (ms.b.toString().length==3 ? ms.b : (ms.b.toString().length==2? "0" + ms.b : "00" + ms.b)))
+    if(currentTime["wtime"]<=0 || currentTime["btime"]<=0){
+        fetch(("/stopTimer"), {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({placehold: true})
+        })
+            .then(res => res.json())
+            .then(data => {
+                currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
+                currentTime["btime"] = (startingTime["btime"]-data.btime)
+                if(currentTime["wtime"]<=0){
+                    $("#whiteTime").html("00:00.000")
+                    $("#whiteTime").css("background-color", "red")
+                } else{
+                    $("#blackTime").html("00:00.000")
+                    $("#blackTime").css("background-color", "red")
+                }
+                runTimer = false
+        });
+    } else{
+        let m = {w: Math.floor(currentTime["wtime"]/60000), b: Math.floor(currentTime["btime"]/60000)}
+        let s = {w: Math.floor(Math.floor(currentTime["wtime"]%60000)/1000), b: Math.floor(Math.floor(currentTime["btime"]%60000)/1000)}
+        let ms = {w: Math.floor(currentTime["wtime"]%1000), b: Math.floor(currentTime["btime"]%1000)}
+        $("#whiteTime").html((m.w<10 ? "0"+m.w : m.w ) + ":" + (s.w<10 ? "0"+s.w : s.w) + "." + (ms.w.toString().length==3 ? ms.w : (ms.w.toString().length==2? "0" + ms.w : "00" + ms.w)))
+        $("#blackTime").html((m.b<10 ? "0"+m.b : m.b ) + ":" + (s.b<10 ? "0"+s.b : s.b) + "." + (ms.b.toString().length==3 ? ms.b : (ms.b.toString().length==2? "0" + ms.b : "00" + ms.b)))
+    }
 }
 
 function initialisePage(){
@@ -313,6 +332,10 @@ $("#testButton").click(function(){
         timeFetch("initTimer")
         $(".line").empty()
         $(".mhEntry").remove()
+        $("#whiteTime").css("background-color", "tan")
+        $("#blackTime").css("background-color", "forestgreen")
+        runTimer = true
+        timerUpdates()
     });
 })
 
@@ -336,7 +359,10 @@ $(".pieceImg").on("mouseup", function(){
                 //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
-            });
+            });        
+            setTimeout(() => {
+                updateHistory()
+            }, 10);
             $("#trigger").click();
         }
     }

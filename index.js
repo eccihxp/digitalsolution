@@ -60,6 +60,12 @@ app.post('/updateTimer', (req, res) => {
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
+app.post('/stopTimer', (req, res) => {
+    chessClock["w"].pause()
+    chessClock["b"].pause()
+    res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
+});
+
 app.post('/switchTimer', (req, res) => {
     console.log('Switching Timer States');
     if(chessClock["w"].isRunning() == true){
