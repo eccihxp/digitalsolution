@@ -9,15 +9,27 @@ let currentBoard = [
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
 let currentTime = {
-    wtime: 12000,
-    btime: 12000
+    wtime: 60000,
+    btime: 60000
 }
 let startingTime = {
-    wtime: 12000,
-    btime: 12000
+    wtime: 60000,
+    btime: 60000
 }
 
 let currentFEN = ""
+let boardHistory = [
+    [[21, 19, 20, 22, 17, 20, 19, 21],
+    [18, 18, 18, 18, 18, 18, 18, 18],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [10, 10, 10, 10, 10, 10, 10, 10],
+    [13, 11, 12, 14, 9, 12, 11, 13]]
+]
+let displayedBoard = 0
+let halfMoves = 0
 
 let movableSquares = []
 let status = ""
@@ -64,7 +76,8 @@ stockfish.addEventListener('message', function (e) {
             timeFetch("switchTimer")
             setTimeout(() => {
                 updateHistory()
-            }, 10);
+                addBoard()
+            }, 50);
         });
     }
     else if(e.data.includes("info") == true){
@@ -247,10 +260,11 @@ function assignTime(){
 }
 
 function initialisePage(){
-    $("body").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer")
-    $("body").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH")
+    $("body").append("<div id='boardContainer'></div>")
+    $("#boardContainer").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer")
+    $("#boardContainer").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH")
     $("#evalLeft").append("<div id='evalLeftFill'></div>")
-    $("body").append("<div id='board'></div>").children().last().addClass("boardAlignH")
+    $("#boardContainer").append("<div id='board'></div>").children().last().addClass("boardAlignH")
     for(let i=8;i>=1;i--){
         $("#board").append("<div></div>").children().last().addClass("row row"+i)
         for(let j=1;j<=8;j++){
@@ -258,8 +272,10 @@ function initialisePage(){
             $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
         }
     }
-    $("body").append("<div id='vspacer2'></div>").children().last().addClass("boardAlignH vspacer")
-    $("body").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
+    $("#boardContainer").append("<div id='vspacer2'></div>").children().last().addClass("boardAlignH vspacer")
+
+    //Right Panel
+    $("#boardContainer").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
     $("#rightPanel").append("<div id='engineDetails'></div>").children().last().addClass("inRightPanel")
     $("#rightPanel").append("<div id='line1'></div>").children().last().addClass("inRightPanel line")
     $("#rightPanel").append("<div id='line2'></div>").children().last().addClass("inRightPanel line")
@@ -275,7 +291,23 @@ function initialisePage(){
     $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
     $("#gameDetails").append("<button id='testButton'>Set Up Board</button>")
     $("#gameDetails").append("<button id='trigger'>Evaluate Position</button>")
-    $("body").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
+
+    $("#boardContainer").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
+
+    $("body").append("<div id='hspacer2'></div>").children().last().addClass("hspacer")
+    $("body").append("<div id='bottomPanel'></div>")
+    $("#bottomPanel").append("<div id='vspacer4'></div>").children().last().addClass("botlane vspacer")
+    $("#bottomPanel").append("<div id='fback'>⏮</div>").children().last().addClass("botlane button")
+    $("#bottomPanel").append("<div id='vspacer5'></div>").children().last().addClass("botlane vspacer")
+    $("#bottomPanel").append("<div id='back'>⏴</div>").children().last().addClass("botlane button")
+    $("#bottomPanel").append("<div id='vspacer6'></div>").children().last().addClass("botlane vspacer")
+    $("#bottomPanel").append("<div id='pause'>⏯</div>").children().last().addClass("botlane button")
+    $("#bottomPanel").append("<div id='vspacer7'></div>").children().last().addClass("botlane vspacer")
+    $("#bottomPanel").append("<div id='fwd'>⏵</div>").children().last().addClass("botlane button")
+    $("#bottomPanel").append("<div id='vspacer8'></div>").children().last().addClass("botlane vspacer")
+    $("#bottomPanel").append("<div id='ffwd'>⏭</div>").children().last().addClass("botlane button")
+    $("#bottomPanel").append("<div id='vspacer9'></div>").children().last().addClass("botlane vspacer")
+
     $(".line").empty()
     $(".mhEntry").remove()
 }   
@@ -294,26 +326,32 @@ function gamestate(){
     });
 }
 
+function addBoard(){
+    boardHistory.push(currentBoard)
+    displayedBoard++;
+    halfMoves++;
+}
+
 $("#trigger").click(function(){
     updateBoard()
     fetch("/rqFen", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ placehold:  false})
-            })
-            .then(res => res.json())
-            .then(data => {
-                currentFEN = data.message
-                //console.log("FEN FOUND: " + data.message)
-                //console.log("current FEN: " + currentFEN)
-                timeFetch("switchTimer")
-                stockfish.postMessage("position fen " + currentFEN)
-                //console.log(String(currentTime["wtime"]))
-                //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
-                stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
-            });
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentFEN = data.message
+        //console.log("FEN FOUND: " + data.message)
+        //console.log("current FEN: " + currentFEN)
+        timeFetch("switchTimer")
+        stockfish.postMessage("position fen " + currentFEN)
+        //console.log(String(currentTime["wtime"]))
+        //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+        stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+    });
 })
 
 $("#testButton").click(function(){
@@ -335,6 +373,18 @@ $("#testButton").click(function(){
         $("#whiteTime").css("background-color", "tan")
         $("#blackTime").css("background-color", "forestgreen")
         runTimer = true
+        boardHistory = [
+            [[21, 19, 20, 22, 17, 20, 19, 21],
+            [18, 18, 18, 18, 18, 18, 18, 18],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [10, 10, 10, 10, 10, 10, 10, 10],
+            [13, 11, 12, 14, 9, 12, 11, 13]]
+        ]
+        halfMoves = 0
+        displayedBoard = 0
         timerUpdates()
     });
 })
@@ -361,8 +411,9 @@ $(".pieceImg").on("mouseup", function(){
                 updateBoard()
             });        
             setTimeout(() => {
+                addBoard()
                 updateHistory()
-            }, 10);
+            }, 50);
             $("#trigger").click();
         }
     }
@@ -381,5 +432,42 @@ $(".pieceImg").on("mouseup", function(){
                 $(".img" + data.message[i]["to"]).css("background-color", "red")
             }
         });
+    }
+})
+
+$("#fback").on("mouseup", function(){
+    displayedBoard = 0
+    currentBoard = boardHistory[0]
+    updateBoard()
+})
+
+$("#back").on("mouseup", function(){
+    displayedBoard = (displayedBoard==0 ? 0 : displayedBoard-1)
+    currentBoard = boardHistory[displayedBoard]
+    updateBoard()
+})
+
+$("#fwd").on("mouseup", function(){
+    displayedBoard = (displayedBoard==halfMoves ? displayedBoard : displayedBoard+1)
+    currentBoard = boardHistory[displayedBoard]
+    updateBoard()
+})
+
+$("#ffwd").on("mouseup", function(){
+    displayedBoard = halfMoves
+    currentBoard = boardHistory[displayedBoard]
+    updateBoard()
+})
+
+$("#pause").on("mouseup", function(){
+    console.log(halfMoves-displayedBoard)
+    for(let i=0;i<(halfMoves-displayedBoard);i++){
+        setTimeout(() => {
+            displayedBoard++
+            console.log(displayedBoard)
+            currentBoard=boardHistory[displayedBoard]
+            console.log(currentBoard)
+            updateBoard()
+        }, 500*i);
     }
 })

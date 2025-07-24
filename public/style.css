@@ -99,7 +99,8 @@ div{
     height: 10vh;
 }
 .vspacer{
-    width: 5vh;
+    width: 6.25vh;
+    height: 100%;
 }
 #vspacer2{
     width: 2.5vh;
@@ -143,4 +144,41 @@ div{
 }
 #gameDetails{
     background-color: darkgrey;
+}
+.hspacer{
+    height: 2.5vh;
+}
+#boardContainer{
+    height: 80vh;
+}
+#bottomPanel{
+    width: 100%;
+    height: 5vh;
+}
+#vspacer4{
+    width: 8.75vh;
+}
+.botlane{
+    float: left;
+}
+.button{
+    width: 14vh;
+    height: 100%;
+    background-color: darkgrey;
+    color: black;
+    font-size: 175%;
+    text-align: center;
+    vertical-align: center;
+}
+#vspacer5{
+    width: 2.5vh;
+}
+#vspacer6{
+    width: 2.5vh;
+}
+#vspacer7{
+    width: 2.5vh;
+}
+#vspacer8{
+    width: 2.5vh;
 }
