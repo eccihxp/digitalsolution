@@ -57,7 +57,7 @@ stockfish.addEventListener('message', function (e) {
     }
     else if(e.data === "readyok"){
         stockfish.postMessage("position name startpos")
-        stockfish.postMessage("setoption name Skill Level value 1")
+        stockfish.postMessage("setoption name Skill Level value 20")
         stockfish.postMessage("setoption name MultiPV value 5")
     }
     else if(e.data.includes("bestmove") == true){
@@ -108,7 +108,18 @@ stockfish.addEventListener('message', function (e) {
                 whiteActive = data.message
             });
             if(e.data.includes("cp") == true){
-                let eval = (e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive)/100
+                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive)/100 + 0.2)
+                console.log(eval)
+                eval = eval.toPrecision(4).toString()
+                console.log(eval)
+                eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
+                console.log(eval)
+                let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
+                let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
+                let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
+                $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
+                $("#depth").html("<strong>Depth:</strong> " + depth)
+                $("#evalScore").html((eval>=0 ? "+" : "") + eval)
                 //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
                 //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
                 $("#evalLeftFill").animate({
@@ -277,6 +288,11 @@ function initialisePage(){
     //Right Panel
     $("#boardContainer").append("<div id='rightPanel'></div>").children().last().addClass("boardAlignH")
     $("#rightPanel").append("<div id='engineDetails'></div>").children().last().addClass("inRightPanel")
+    $("#engineDetails").append("<div id='evalScore'>+0.2</div>").children().last().addClass("inEngineDetails")
+    $("#engineDetails").append("<div id='engineName'>Running <strong>Stockfish 2018-07-25</strong></div>").children().last().addClass("inEngineDetails")
+    $("#engineDetails").append("<div id='nodeDetails'>2m nodes at 410k/s</div>").children().last().addClass("inEngineDetails")
+    $("#engineDetails").append("<div id='depth'><strong>Depth:</strong> 10</div>").children().last().addClass("inEngineDetails")
+    
     $("#rightPanel").append("<div id='line1'></div>").children().last().addClass("inRightPanel line")
     $("#rightPanel").append("<div id='line2'></div>").children().last().addClass("inRightPanel line")
     $("#rightPanel").append("<div id='line3'></div>").children().last().addClass("inRightPanel line")
@@ -464,10 +480,8 @@ $("#pause").on("mouseup", function(){
     for(let i=0;i<(halfMoves-displayedBoard);i++){
         setTimeout(() => {
             displayedBoard++
-            console.log(displayedBoard)
             currentBoard=boardHistory[displayedBoard]
-            console.log(currentBoard)
             updateBoard()
-        }, 500*i);
+        }, 250*i);
     }
 })
