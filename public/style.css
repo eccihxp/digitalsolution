@@ -6,6 +6,17 @@ body{
 div{
     float: down;
 }
+#overlay{
+    z-index:100;
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    background-color: red;
+    opacity: 0;
+    left:0px;
+    top:0px;
+    pointer-events:none;
+}
 
 #board{
     width: 80vh;

@@ -15,11 +15,12 @@ app.listen(port, () => {
 
 app.post('/gamestate', (req, res) => {
     console.log('Getting Game State');
-    res.json({message: (game.isCheckmate()==true ? "checkmate" : (game.isDrawByFiftyMoves()==true ? "fifty moves" : (game.isInsufficientMaterial()==true ? "insufficient material" : (game.isStalemate()==true ? "stalemate" : (game.isThreefoldRepetition()==true ? "threefold repetition" : "normal")))))}); // <-- JSON response
+    res.json({message: (game.isCheckmate()==true ? "checkmate" : (game.isDrawByFiftyMoves()==true ? "fifty moves" : (game.isInsufficientMaterial()==true ? "insufficient material" : (game.isStalemate()==true ? "stalemate" : (game.isThreefoldRepetition()==true ? "threefold" : "normal")))))}); // <-- JSON response
 });
 
 app.post('/history', (req, res) => {
     console.log('Getting Move History');
+    console.log(game.history())
     res.json({message: game.history()}); // <-- JSON response
 });
 

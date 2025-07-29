@@ -73,11 +73,8 @@ stockfish.addEventListener('message', function (e) {
         .then(data => {
             currentBoard = data.message
             updateBoard()
+            addBoard()
             timeFetch("switchTimer")
-            setTimeout(() => {
-                updateHistory()
-                addBoard()
-            }, 50);
         });
     }
     else if(e.data.includes("info") == true){
@@ -182,29 +179,24 @@ function updateHistory(){
     })
         .then(res => res.json())
         .then(data => {
-            //console.log(data.message)
             moveHistory = data.message
+            mhWhite = []
+            mhBlack = []
+            for(let i=0;i<moveHistory.length;i++){
+                if(i%2==0){
+                    mhWhite.push(moveHistory[i])
+                } else{
+                    mhBlack.push(moveHistory[i])
+                }
+            }
+            $(".historyColumn").empty()
+            mhBlack.map(function(cv, index, arr){
+                $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+            })
+            mhWhite.map(function(cv, index, arr){
+                $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+            })
     });
-    mhWhite = []
-    mhBlack = []
-    for(let i=0;i<moveHistory.length;i++){
-        console.log(i)
-        if(i%2==0){
-            mhWhite.push(moveHistory[i])
-        } else{
-            mhBlack.push(moveHistory[i])
-        }
-        console.log(moveHistory)
-        //console.log(mhWhite)
-        //console.log(mhBlack)
-        $(".historyColumn").empty()
-        mhBlack.map(function(cv, index, arr){
-            $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
-        })
-        mhWhite.map(function(cv, index, arr){
-            $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
-        })
-    }
 }
 
 function updateBoard(){
@@ -213,6 +205,9 @@ function updateBoard(){
             $(".img" + String.fromCharCode(97+j) + i.toString()).attr("src", currentBoard[8-i][j] + ".png")
         }
     }
+    setTimeout(updateHistory(), 50)
+    updateHistory()
+    gamestate()
 }
 
 async function timerUpdates() {
@@ -329,6 +324,7 @@ function initialisePage(){
 }   
 
 function gamestate(){
+    //"checkmate", "fifty moves", "insufficient material", "stalemate", "threefold", "normal", "timeout"
     fetch(("/gamestate"), {
         method: "POST",
         headers: {
@@ -339,6 +335,30 @@ function gamestate(){
         .then(res => res.json())
         .then(data => {
             status = data.message
+            console.log(status)
+            if(status=="checkmate" || status == "timeout"){
+                console.log("APPLY OVERLAY")
+                $("#overlay").css("background-color", "red")
+                setTimeout(()=>{
+                    $("#overlay").animate({
+                        opacity: "50%"
+                        }, {
+                        duration: 125,
+                        easing: "swing"
+                    })
+                }, 500)
+            } else if(status == "fifty moves" || status == "insufficient material" || status == "stalemate" || status == "threefold"){
+                console.log("APPLY OVERLAY")
+                $("#overlay").css("background-color", "yellow")
+                setTimeout(()=>{
+                    $("#overlay").animate({
+                        opacity: "50%"
+                        }, {
+                        duration: 125,
+                        easing: "swing"
+                    })
+                }, 500)
+            }
     });
 }
 
@@ -382,12 +402,12 @@ $("#testButton").click(function(){
     .then(data => {
         currentBoard = data.message
         updateBoard()
-        updateHistory
         timeFetch("initTimer")
         $(".line").empty()
         $(".mhEntry").remove()
         $("#whiteTime").css("background-color", "tan")
         $("#blackTime").css("background-color", "forestgreen")
+        $("#overlay").css("opacity", "0")
         runTimer = true
         boardHistory = [
             [[21, 19, 20, 22, 17, 20, 19, 21],
@@ -425,12 +445,8 @@ $(".pieceImg").on("mouseup", function(){
                 //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
-            });        
-            setTimeout(() => {
-                addBoard()
-                updateHistory()
-            }, 50);
-            $("#trigger").click();
+                $("#trigger").click();
+            });
         }
     }
     if (newSquare = true){
