@@ -3,6 +3,8 @@ const app = express()
 const port = 3000
 const {Chess} = require('chess.js')
 const {Timer} = require('timer-node')
+let totallines = 0;
+let evalGame;
 
 let chessClock = {w: new Timer(), b: new Timer()}
 
@@ -14,46 +16,40 @@ app.listen(port, () => {
 })
 
 app.post('/gamestate', (req, res) => {
-    console.log('Getting Game State');
     res.json({message: (game.isCheckmate()==true ? "checkmate" : (game.isDrawByFiftyMoves()==true ? "fifty moves" : (game.isInsufficientMaterial()==true ? "insufficient material" : (game.isStalemate()==true ? "stalemate" : (game.isThreefoldRepetition()==true ? "threefold" : "normal")))))}); // <-- JSON response
 });
 
 app.post('/history', (req, res) => {
-    console.log('Getting Move History');
-    console.log(game.history())
     res.json({message: game.history()}); // <-- JSON response
 });
 
 app.post('/convert', (req, res) => {
-    console.log('Converting Engine Line');
-    let evalGame = new Chess(game.fen())
+    let evalGame = new Chess()
     console.log(req.body.line)
-    console.log(req.body.line.split(" "))
-    req.body.line.split(" ").map(function(e){
-        evalGame.move(e)
-    })
+    for(let i=0;i<req.body.line.length;i++){
+        try {
+            evalGame.move(req.body.line[i])
+        } catch (error) {
+            continue; // Skip to next iteration
+        }
+    }
     res.json({message: evalGame.history()}); // <-- JSON response
 });
 
 app.post('/evaluate', (req, res) => {
-    console.log('Evaluation');
     res.json({message: "Evaluation"}); // <-- JSON response
 });
 
 app.post('/initTimer', (req, res) => {
-    console.log('Creating Timer');
     chessClock["w"] = new Timer()
     chessClock["w"].start()
     chessClock["b"] = new Timer()
-    console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
 app.post('/resetTimer', (req, res) => {
-    console.log('Resetting Timer');
     chessClock["w"] = new Timer()
     chessClock["b"] = new Timer()
-    console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
@@ -68,7 +64,6 @@ app.post('/stopTimer', (req, res) => {
 });
 
 app.post('/switchTimer', (req, res) => {
-    console.log('Switching Timer States');
     if(chessClock["w"].isRunning() == true){
         chessClock["w"].pause()
         if(chessClock["b"].isStarted() == false){
@@ -80,23 +75,18 @@ app.post('/switchTimer', (req, res) => {
         chessClock["b"].pause()
         chessClock["w"].resume()
     }
-    console.log({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()})
     res.json({wtime: chessClock["w"].ms(), btime: chessClock["b"].ms()}); // <-- JSON response
 });
 
 app.post('/rqSide', (req, res) => {
-    console.log('Requesting Side to Move: ' + (game.turn() == "w" ? 1 : -1));
     res.json({message: (game.turn() == "w" ? 1 : -1)}); // <-- JSON response
 });
 
 app.post('/rqFen', (req, res) => {
-    console.log('Fen Request');
-    console.log(game.fen())
     res.json({message: game.fen()}); // <-- JSON response
 });
 
 app.post('/boardSetup', (req, res) => {
-    console.log('Setting up the Board');
     game = new Chess()
     clickedSquare = ""
     toBoardObject("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -105,13 +95,11 @@ app.post('/boardSetup', (req, res) => {
 });
 
 app.post('/checkMoves', (req, res) => {
-    console.log('Checking Moves');
     clickedSquare = req.body.selectedSquare
     res.json({ message: game.moves({verbose: true}).filter(moveFilter) }); // <-- JSON response
 });
 
 app.post('/makeMove', (req, res) => {
-    console.log('Making Moves');
     game.move((clickedSquare.toString() + req.body.moveMade.toString()).toString(), {sloppy: true})
     toBoardObject(game.fen())
     assignObject()
@@ -119,7 +107,6 @@ app.post('/makeMove', (req, res) => {
 });
 
 app.post('/computerMove', (req, res) => {
-    console.log('Making Computer Move');
     game.move(req.body.moveMade.toString(), {sloppy: true})
     toBoardObject(game.fen())
     assignObject()
@@ -176,7 +163,6 @@ let theBoard = [
 
 function toFEN(input){
     let outputFEN = ""
-    console.log("start")
     
     // Piece Placement
     for(let i=0;i<8;i++){
@@ -307,9 +293,6 @@ function assignObject(){
     halfmoveClock = workingHalfmoveClock
     fullmoveCount = workingFullmoveCounter
 }
-
-console.log(toFEN(startingBoard))
-console.log(toBoardObject(toFEN(startingBoard)))
 
 function moveFilter(obj){
     return obj["from"] == clickedSquare

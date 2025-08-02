@@ -42,6 +42,7 @@ let runTimer = true
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
 var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
+var analysis = new Worker(wasmSupported ? 'analysis.wasm.js' : 'analysis.js');
 
 initialisePage()
 
@@ -50,7 +51,7 @@ $(document).ready(function(e){
 })
 
 stockfish.addEventListener('message', function (e) {
-    console.log(e.data);
+    //console.log(e.data);
     if(e.data === "uciok"){
         stockfish.postMessage("ucinewgame");
         stockfish.postMessage("isready");
@@ -73,11 +74,10 @@ stockfish.addEventListener('message', function (e) {
         .then(data => {
             currentBoard = data.message
             updateBoard()
-            addBoard()
             timeFetch("switchTimer")
         });
     }
-    else if(e.data.includes("info") == true){
+    /*else if(e.data.includes("info") == true){
         let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
         fetch("/history", {
             method: "POST",
@@ -164,10 +164,150 @@ stockfish.addEventListener('message', function (e) {
             $("#line" + pv).html(lineOutputString)
             //console.log(data.message)
         });
-    }
+    }*/
 });
 
 stockfish.postMessage("uci");
+
+analysis.addEventListener('message', function (e) {
+    console.log(e.data);
+    if(e.data === "uciok"){
+        analysis.postMessage("ucinewgame");
+        analysis.postMessage("isready");
+    }
+    else if(e.data === "readyok"){
+        analysis.postMessage("position name startpos")
+        analysis.postMessage("setoption name MultiPV value 5")
+        analysis.postMessage("go infinite")
+    }
+    else if(e.data.includes("info") == true){
+        let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
+        fetch("/history", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: null
+        })
+        .then(res => res.json())
+        .then(data => {
+            //console.log(data.message)
+            moveHistory = data.message
+        });
+        if(pv==1){
+            fetch("/rqSide", {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({placehold: true})
+            })
+            .then(res => res.json())
+            .then(data => {
+                whiteActive = data.message
+            });
+            if(e.data.includes("cp") == true){
+                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100)
+                console.log(eval)
+                eval = eval.toPrecision(4).toString()
+                console.log(eval)
+                eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
+                console.log(eval)
+                let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
+                let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
+                let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
+                $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
+                $("#depth").html("<strong>Depth:</strong> " + depth)
+                $("#evalScore").html((eval>=0 ? "+" : "") + eval)
+                //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
+                //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
+                $("#evalLeftFill").animate({
+                    height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
+                    }, {
+                    duration: 100,
+                    easing: "swing"
+                })
+                //console.log("evaluation is: " + eval)
+            }
+            else if(e.data.includes("mate") == true){
+                //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
+                //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
+                $("#evalLeftFill").animate({
+                    height: (whiteActive==true ? "100%" : "0%")
+                    }, {
+                    duration: 100,
+                    easing: "swing"
+                })
+            }
+            else{
+                //console.log("evaluation error")
+            }
+        }
+        let lineMH = moveHistory.concat(e.data.split(" pv ")[1].split(" "))
+        console.log(lineMH)
+        fetch("/convert", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({line: lineMH})
+        })
+        .then(res => res.json())
+        .then(data => {
+            let lineOutput = data.message
+            console.log(lineOutput)
+            let lineOutputString = "1. ";
+            let moveNo = 1
+            for(let i=1;i<lineOutput.length+1;i++){
+                if(i%2==1 && i!=1){
+                    moveNo++
+                    lineOutputString += " " + moveNo + ". "
+                }
+                lineOutputString += lineOutput[i-1] + " "
+            }
+            $("#line" + pv).html(lineOutputString)
+            //console.log(data.message)
+        });
+        //console.log(e.data.split(" pv ")[1])
+        /*fetch("/rqFen", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ placehold:  false})
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentFEN = data.message
+            
+            fetch("/convert", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({line: e.data.split(" pv ")[1], fen: data.message})
+            })
+            .then(res => res.json())
+            .then(data => {
+                let lineOutput = data.message
+                console.log(lineOutput)
+                let lineOutputString = "1. ";
+                let moveNo = 1
+                for(let i=1;i<lineOutput.length+1;i++){
+                    if(i%2==1 && i!=1){
+                        moveNo++
+                        lineOutputString += " " + moveNo + ". "
+                    }
+                    lineOutputString += lineOutput[i-1] + " "
+                }
+                $("#line" + pv).html(lineOutputString)
+                //console.log(data.message)
+            });
+        });*/
+    }
+});
+
+analysis.postMessage("uci");
 
 function updateHistory(){
     fetch("/history", {
@@ -207,7 +347,22 @@ function updateBoard(){
     }
     setTimeout(updateHistory(), 50)
     updateHistory()
+    fetch("/rqFen", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentFEN = data.message
+        analysis.postMessage("stop")
+        analysis.postMessage("position fen " + currentFEN)
+        analysis.postMessage("go infinite")
+    });
     gamestate()
+    addBoard()
 }
 
 async function timerUpdates() {
@@ -387,6 +542,9 @@ $("#trigger").click(function(){
         //console.log(String(currentTime["wtime"]))
         //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
         stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+        analysis.postMessage("stop")
+        analysis.postMessage("position fen " + currentFEN)
+        analysis.postMessage("go infinite")
     });
 })
 
@@ -401,6 +559,7 @@ $("#testButton").click(function(){
     .then(res => res.json())
     .then(data => {
         currentBoard = data.message
+        whiteActive = 1
         updateBoard()
         timeFetch("initTimer")
         $(".line").empty()
