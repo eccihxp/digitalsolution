@@ -31,6 +31,7 @@ let boardHistory = [
 let displayedBoard = 0
 let halfMoves = 0
 let playerIsWhite = true
+let winner = "White"
 
 let movableSquares = []
 let status = ""
@@ -184,7 +185,7 @@ analysis.addEventListener('message', function (e) {
                 //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
                 //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
                 $("#evalLeftFill").animate({
-                    height: (whiteActive==true ? "100%" : "0%")
+                    height: (halfMoves%2==0 ? "100%" : "0%")
                     }, {
                     duration: 100,
                     easing: "swing"
@@ -367,9 +368,13 @@ function assignTime(){
                 if(currentTime["wtime"]<=0){
                     $("#whiteTime").html("00:00.000")
                     $("#whiteTime").css("background-color", "red")
+                    status = "timeout"
+                    endGame()
                 } else{
                     $("#blackTime").html("00:00.000")
                     $("#blackTime").css("background-color", "red")
+                    status = "timeout"
+                    endGame()
                 }
                 runTimer = false
         });
@@ -418,8 +423,6 @@ function initialisePage(){
     $("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
     $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
 
-    $("#boardContainer").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
-
     $("body").append("<div id='hspacer2'></div>").children().last().addClass("hspacer")
     $("body").append("<div id='bottomPanel'></div>")
     $("#bottomPanel").append("<div id='vspacer4'></div>").children().last().addClass("botlane vspacer")
@@ -435,8 +438,8 @@ function initialisePage(){
     $("#bottomPanel").append("<div id='vspacer9'></div>").children().last().addClass("botlane vspacer")
 
     $("body").append("<div id='mid'></div>")
-    $("#mid").append("<div id='midTitle'>Placeholder Msg</div>").children().last().addClass("midlane")
-    $("#mid").append("<div id='midSubtitle'>By Threefold Repetition</div>").children().last().addClass("midlane")
+    $("#mid").append("<div id='midTitle'>Start A Game</div>").children().last().addClass("midlane")
+    $("#mid").append("<div id='midSubtitle'>Choose Your Settings</div>").children().last().addClass("midlane")
     $("#mid").append("<div id='strengthTitle'>Strength: 10</div>").children().last().addClass("midlane")
     $("#mid").append("<input id='strengthInput' type='range' min='0' max='20' step='1' />").children().last().addClass("midlane slider")
     $("#mid").append("<div id='minTitle'>Minutes: 30</div>").children().last().addClass("midlane")
@@ -469,8 +472,18 @@ function gamestate(){
 
 function endGame(){
     if(["checkmate", "timeout", "forfeit"].includes(status)){
+        if(status=="timeout"){
+            winner = (currentTime["wtime"]>currentTime["btime"] ? "White" : "Black")
+        } else if(status=="forfeit"){
+            winner = (playerIsWhite ? "Black" : "White")
+        } else{
+            winner = (halfMoves%2==0 ? "Black" : "White")
+        }
         console.log("APPLY OVERLAY")
         $("#overlay").css("background-color", "red")
+        let lossResponses = ["By Checkmate", "By Timeout", "By Surrender"]
+        $("#midTitle").html(winner + " Wins")
+        $("#midSubtitle").html(lossResponses[["checkmate", "timeout", "forfeit"].indexOf(status)])
         setTimeout(()=>{
             $("#overlay").animate({
                 opacity: "50%"
@@ -479,6 +492,8 @@ function endGame(){
                 easing: "swing"
             })
             $("#mid").css("pointer-events", "true")
+            $("#mid").css("z-index", "200")
+            $("#mid").children().css("pointer-events", "true")
             $("#mid").animate({
                 opacity: "100%"
             }, {
@@ -489,6 +504,9 @@ function endGame(){
     } else if(["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].includes(status)){
         console.log("APPLY OVERLAY")
         $("#overlay").css("background-color", "yellow")
+        let drawResponses = ["By Fifty Move Rule", "By Insufficient Material", "By Stalemate", "By Threefold Repetition", "By Agreement"]
+        $("#midTitle").html("Draw")
+        $("#midSubtitle").html(drawResponses[["checkmate", "timeout", "forfeit"].indexOf(status)])
         setTimeout(()=>{
             $("#overlay").animate({
                 opacity: "50%"
@@ -497,6 +515,8 @@ function endGame(){
                 easing: "swing"
             })
             $("#mid").css("pointer-events", "true")
+            $("#mid").css("z-index", "200")
+            $("#mid").children().css("pointer-events", "true")
             $("#mid").animate({
                 opacity: "100%"
             }, {
@@ -514,7 +534,6 @@ function addBoard(){
 }
 
 function computer(){
-    updateBoard()
     fetch("/rqFen", {
         method: "POST",
         headers: {
@@ -537,12 +556,12 @@ function computer(){
     });
 }
 
-$(".pieceImg").on("mouseup", function(){
+$("#board").on("click", ".pieceImg", function(){
     let newSquare = true
     $(".pieceImg").css("background-color", "transparent")
     let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
     for(let i=0;i<movableSquares.length;i++){
-        //console.log(movableSquares[i])
+        console.log(movableSquares[i])
         if(clickedSquare == movableSquares[i]["to"]){
             newSquare = false
             fetch("/makeMove", {
@@ -688,10 +707,104 @@ $("#playWhite").on("mouseup", function(){
     });
     playerIsWhite = true
     $("#mid").css("pointer-events", "false")
+    $("#mid").css("z-index", "-100")
+    $("#mid").children().css("pointer-events", "false")
     $("#mid").animate({
         opacity: 0
     }, {
         duration: 100,
         easing: "swing"
     })
+    $("#board").empty()
+    for(let i=8;i>=1;i--){
+        $("#board").append("<div></div>").children().last().addClass("row row"+i)
+        for(let j=1;j<=8;j++){
+            $(".row"+i).append("<div></div>").children().last().addClass("square " + String.fromCharCode(96+j) + i.toString() + " " + ((i+j)%2==0 ? "black" : "white"))
+            $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
+        }
+    }
+})
+
+$("#playBlack").on("mouseup", function(){
+    fetch("/reset", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    stockfish.postMessage("setoption name Skill Level value ") + $("#strength").val()
+    currentTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    currentTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    fetch("/boardSetup", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ trigger: true })
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentBoard = data.message
+        whiteActive = 1
+        updateBoard()
+        timeFetch("initTimer")
+        $(".line").empty()
+        $(".mhEntry").remove()
+        $("#whiteTime").css("background-color", "tan")
+        $("#blackTime").css("background-color", "forestgreen")
+        $("#overlay").css("opacity", "0")
+        runTimer = true
+        boardHistory = [
+            [[21, 19, 20, 22, 17, 20, 19, 21],
+            [18, 18, 18, 18, 18, 18, 18, 18],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [10, 10, 10, 10, 10, 10, 10, 10],
+            [13, 11, 12, 14, 9, 12, 11, 13]]
+        ]
+        halfMoves = 0
+        displayedBoard = 0
+    });
+    playerIsWhite = false
+    $("#mid").css("pointer-events", "false")
+    $("#mid").css("z-index", "-100")
+    $("#mid").children().css("pointer-events", "false")
+    $("#mid").animate({
+        opacity: 0
+    }, {
+        duration: 100,
+        easing: "swing"
+    })
+    $("#board").empty()
+    for(let i=1;i<=8;i++){
+        $("#board").append("<div></div>").children().last().addClass("row row"+i)
+        for(let j=8;j>=1;j--){
+            $(".row"+i).append("<div></div>").children().last().addClass("square " + String.fromCharCode(96+j) + i.toString() + " " + ((i+j)%2==0 ? "black" : "white"))
+            $(".row"+i).children().last().append("<img>").children().last().addClass("pieceImg img" + String.fromCharCode(96+j) + i.toString()).attr("src", "0.png")
+        }
+    }
+    fetch("/rqFen", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentFEN = data.message
+        //console.log("FEN FOUND: " + data.message)
+        //console.log("current FEN: " + currentFEN)
+        stockfish.postMessage("position fen " + currentFEN)
+        //console.log(String(currentTime["wtime"]))
+        //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+        stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+        analysis.postMessage("position fen " + currentFEN)
+        analysis.postMessage("go depth 16")
+    });
 })
