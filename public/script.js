@@ -30,6 +30,7 @@ let boardHistory = [
 ]
 let displayedBoard = 0
 let halfMoves = 0
+let playerIsWhite = true
 
 let movableSquares = []
 let status = ""
@@ -59,7 +60,6 @@ stockfish.addEventListener('message', function (e) {
     else if(e.data === "readyok"){
         stockfish.postMessage("position name startpos")
         stockfish.postMessage("setoption name Skill Level value 20")
-        stockfish.postMessage("setoption name MultiPV value 5")
     }
     else if(e.data.includes("bestmove") == true){
         //console.log(e.data.split(" ")[1])
@@ -77,93 +77,54 @@ stockfish.addEventListener('message', function (e) {
             timeFetch("switchTimer")
         });
     }
-    /*else if(e.data.includes("info") == true){
-        let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
-        fetch("/history", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: null
+    /*else if(e.data.includes("info")==true){
+        fetch("/rqSide", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({placehold: true})
         })
         .then(res => res.json())
         .then(data => {
-            //console.log(data.message)
-            moveHistory = data.message
+            whiteActive = data.message
         });
-        if(pv==1){
-            let whiteActive = 1
-            fetch("/rqSide", {
-                    method: "POST",
-                    headers: {
-                    "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({placehold: true})
+        if(e.data.includes("cp") == true){
+            let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100)
+            console.log(eval)
+            eval = eval.toPrecision(4).toString()
+            console.log(eval)
+            eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
+            console.log(eval)
+            let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
+            let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
+            let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
+            $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
+            $("#depth").html("<strong>Depth:</strong> " + depth)
+            $("#evalScore").html((eval>=0 ? "+" : "") + eval)
+            //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
+            //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
+            $("#evalLeftFill").animate({
+                height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
+                }, {
+                duration: 100,
+                easing: "swing"
             })
-            .then(res => res.json())
-            .then(data => {
-                whiteActive = data.message
-            });
-            if(e.data.includes("cp") == true){
-                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1] * -whiteActive)/100 + 0.2)
-                console.log(eval)
-                eval = eval.toPrecision(4).toString()
-                console.log(eval)
-                eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
-                console.log(eval)
-                let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
-                let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
-                let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
-                $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
-                $("#depth").html("<strong>Depth:</strong> " + depth)
-                $("#evalScore").html((eval>=0 ? "+" : "") + eval)
-                //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
-                //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
-                $("#evalLeftFill").animate({
-                    height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
-                    }, {
-                    duration: 100,
-                    easing: "swing"
-                })
-                //console.log("evaluation is: " + eval)
-            }
-            else if(e.data.includes("mate") == true){
-                //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
-                //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
-                $("#evalLeftFill").animate({
-                    height: (whiteActive==true ? "100%" : "0%")
-                    }, {
-                    duration: 100,
-                    easing: "swing"
-                })
-            }
-            else{
-                //console.log("evaluation error")
-            }
+            //console.log("evaluation is: " + eval)
         }
-        //console.log(e.data.split(" pv ")[1])
-        fetch("/convert", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: JSON.stringify({line: e.data.split(" pv ")[1]})
-        })
-        .then(res => res.json())
-        .then(data => {
-            let lineOutput = moveHistory.concat(data.message)
-            let lineOutputString = "1. ";
-            let moveNo = 1
-            for(let i=1;i<lineOutput.length+1;i++){
-                if(i%2==1 && i!=1){
-                    moveNo++
-                    lineOutputString += " " + moveNo + ". "
-                }
-                lineOutputString += lineOutput[i-1] + " "
-            }
-            $("#line" + pv).html(lineOutputString)
-            //console.log(data.message)
-        });
+        else if(e.data.includes("mate") == true){
+            //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
+            //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
+            $("#evalLeftFill").animate({
+                height: (e.data.split(" ")[e.data.split(" ").indexOf("mate")+1]>0 ? "100%" : "0%")
+                }, {
+                duration: 100,
+                easing: "swing"
+            })
+        }
+        else{
+            //console.log("evaluation error")
+        }
     }*/
 });
 
@@ -178,22 +139,10 @@ analysis.addEventListener('message', function (e) {
     else if(e.data === "readyok"){
         analysis.postMessage("position name startpos")
         analysis.postMessage("setoption name MultiPV value 5")
-        analysis.postMessage("go infinite")
+        analysis.postMessage("go depth 16")
     }
     else if(e.data.includes("info") == true){
         let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
-        fetch("/history", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: null
-        })
-        .then(res => res.json())
-        .then(data => {
-            //console.log(data.message)
-            moveHistory = data.message
-        });
         if(pv==1){
             fetch("/rqSide", {
                     method: "POST",
@@ -207,7 +156,7 @@ analysis.addEventListener('message', function (e) {
                 whiteActive = data.message
             });
             if(e.data.includes("cp") == true){
-                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100)
+                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100*whiteActive)
                 console.log(eval)
                 eval = eval.toPrecision(4).toString()
                 console.log(eval)
@@ -218,16 +167,18 @@ analysis.addEventListener('message', function (e) {
                 let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
                 $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
                 $("#depth").html("<strong>Depth:</strong> " + depth)
-                $("#evalScore").html((eval>=0 ? "+" : "") + eval)
-                //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
-                //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
-                $("#evalLeftFill").animate({
-                    height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
-                    }, {
-                    duration: 100,
-                    easing: "swing"
-                })
-                //console.log("evaluation is: " + eval)
+                if(e.data.split(" ")[e.data.split(" ").indexOf("depth")+1]>12){
+                    $("#evalScore").html((eval>=0 ? "+" : "") + eval)
+                    //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
+                    //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
+                    $("#evalLeftFill").animate({
+                        height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
+                        }, {
+                        duration: 50,
+                        easing: "swing"
+                    })
+                    //console.log("evaluation is: " + eval)
+                }
             }
             else if(e.data.includes("mate") == true){
                 //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
@@ -243,6 +194,18 @@ analysis.addEventListener('message', function (e) {
                 //console.log("evaluation error")
             }
         }
+        fetch("/history", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: null
+        })
+        .then(res => res.json())
+        .then(data => {
+            //console.log(data.message)
+            moveHistory = data.message
+        });
         let lineMH = moveHistory.concat(e.data.split(" pv ")[1].split(" "))
         console.log(lineMH)
         fetch("/convert", {
@@ -357,9 +320,8 @@ function updateBoard(){
     .then(res => res.json())
     .then(data => {
         currentFEN = data.message
-        analysis.postMessage("stop")
         analysis.postMessage("position fen " + currentFEN)
-        analysis.postMessage("go infinite")
+        analysis.postMessage("go depth 16")
     });
     gamestate()
     addBoard()
@@ -455,8 +417,6 @@ function initialisePage(){
     $("#timerContainer").append("<div id='whiteTime'></div>").children().last().addClass("timer")
     $("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
     $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
-    $("#gameDetails").append("<button id='testButton'>Set Up Board</button>")
-    $("#gameDetails").append("<button id='trigger'>Evaluate Position</button>")
 
     $("#boardContainer").append("<div id='vspacer3'></div>").children().last().addClass("boardAlignH vspacer")
 
@@ -474,6 +434,18 @@ function initialisePage(){
     $("#bottomPanel").append("<div id='ffwd'>⏭</div>").children().last().addClass("botlane button")
     $("#bottomPanel").append("<div id='vspacer9'></div>").children().last().addClass("botlane vspacer")
 
+    $("body").append("<div id='mid'></div>")
+    $("#mid").append("<div id='midTitle'>Placeholder Msg</div>").children().last().addClass("midlane")
+    $("#mid").append("<div id='midSubtitle'>By Threefold Repetition</div>").children().last().addClass("midlane")
+    $("#mid").append("<div id='strengthTitle'>Strength: 10</div>").children().last().addClass("midlane")
+    $("#mid").append("<input id='strengthInput' type='range' min='0' max='20' step='1' />").children().last().addClass("midlane slider")
+    $("#mid").append("<div id='minTitle'>Minutes: 30</div>").children().last().addClass("midlane")
+    $("#mid").append("<input id='minInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
+    $("#mid").append("<div id='secTitle'>Seconds: 30</div>").children().last().addClass("midlane")
+    $("#mid").append("<input id='secInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
+    $("#mid").append("<button id='playWhite' value='Play as White'>Play as White</button>").children().last().addClass("midlane colorButton")
+    $("#mid").append("<button id='playBlack' value='Play as Black'>Play as Black</button>").children().last().addClass("midlane colorButton")
+
     $(".line").empty()
     $(".mhEntry").remove()
 }   
@@ -487,34 +459,52 @@ function gamestate(){
         },
         body: JSON.stringify({placehold: true})
     })
-        .then(res => res.json())
-        .then(data => {
-            status = data.message
-            console.log(status)
-            if(status=="checkmate" || status == "timeout"){
-                console.log("APPLY OVERLAY")
-                $("#overlay").css("background-color", "red")
-                setTimeout(()=>{
-                    $("#overlay").animate({
-                        opacity: "50%"
-                        }, {
-                        duration: 125,
-                        easing: "swing"
-                    })
-                }, 500)
-            } else if(status == "fifty moves" || status == "insufficient material" || status == "stalemate" || status == "threefold"){
-                console.log("APPLY OVERLAY")
-                $("#overlay").css("background-color", "yellow")
-                setTimeout(()=>{
-                    $("#overlay").animate({
-                        opacity: "50%"
-                        }, {
-                        duration: 125,
-                        easing: "swing"
-                    })
-                }, 500)
-            }
+    .then(res => res.json())
+    .then(data => {
+        status = data.message
+        console.log(status)
+        endGame()
     });
+}
+
+function endGame(){
+    if(["checkmate", "timeout", "forfeit"].includes(status)){
+        console.log("APPLY OVERLAY")
+        $("#overlay").css("background-color", "red")
+        setTimeout(()=>{
+            $("#overlay").animate({
+                opacity: "50%"
+                }, {
+                duration: 125,
+                easing: "swing"
+            })
+            $("#mid").css("pointer-events", "true")
+            $("#mid").animate({
+                opacity: "100%"
+            }, {
+                duration: 100,
+                easing: "swing"
+            })
+        }, 500)
+    } else if(["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].includes(status)){
+        console.log("APPLY OVERLAY")
+        $("#overlay").css("background-color", "yellow")
+        setTimeout(()=>{
+            $("#overlay").animate({
+                opacity: "50%"
+                }, {
+                duration: 125,
+                easing: "swing"
+            })
+            $("#mid").css("pointer-events", "true")
+            $("#mid").animate({
+                opacity: "100%"
+            }, {
+                duration: 100,
+                easing: "swing"
+            })
+        }, 500)
+    }
 }
 
 function addBoard(){
@@ -523,7 +513,7 @@ function addBoard(){
     halfMoves++;
 }
 
-$("#trigger").click(function(){
+function computer(){
     updateBoard()
     fetch("/rqFen", {
         method: "POST",
@@ -542,47 +532,10 @@ $("#trigger").click(function(){
         //console.log(String(currentTime["wtime"]))
         //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
         stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
-        analysis.postMessage("stop")
         analysis.postMessage("position fen " + currentFEN)
-        analysis.postMessage("go infinite")
+        analysis.postMessage("go depth 16")
     });
-})
-
-$("#testButton").click(function(){
-    fetch("/boardSetup", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ trigger: true })
-    })
-    .then(res => res.json())
-    .then(data => {
-        currentBoard = data.message
-        whiteActive = 1
-        updateBoard()
-        timeFetch("initTimer")
-        $(".line").empty()
-        $(".mhEntry").remove()
-        $("#whiteTime").css("background-color", "tan")
-        $("#blackTime").css("background-color", "forestgreen")
-        $("#overlay").css("opacity", "0")
-        runTimer = true
-        boardHistory = [
-            [[21, 19, 20, 22, 17, 20, 19, 21],
-            [18, 18, 18, 18, 18, 18, 18, 18],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [10, 10, 10, 10, 10, 10, 10, 10],
-            [13, 11, 12, 14, 9, 12, 11, 13]]
-        ]
-        halfMoves = 0
-        displayedBoard = 0
-        timerUpdates()
-    });
-})
+}
 
 $(".pieceImg").on("mouseup", function(){
     let newSquare = true
@@ -604,7 +557,7 @@ $(".pieceImg").on("mouseup", function(){
                 //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
-                $("#trigger").click();
+                computer()
             });
         }
     }
@@ -659,4 +612,86 @@ $("#pause").on("mouseup", function(){
             updateBoard()
         }, 250*i);
     }
+})
+
+$("#strengthInput").on("change", function(){
+    stockfish.postMessage("setoption name Skill Level value ") + this.value
+    $("#strengthTitle").html("Strength: " + this.value)
+})
+
+$("#minInput").on("change", function(){
+    $("#minTitle").html("Minutes: " + this.value)
+    console.log(parseInt($("#minInput").val()))
+    currentTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    currentTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    console.log(currentTime)
+    console.log(startingTime)
+})
+
+$("#secInput").on("change", function(){
+    $("#secTitle").html("Seconds: " + this.value)
+    currentTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    currentTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    console.log(currentTime)
+    console.log(startingTime)
+})
+
+$("#playWhite").on("mouseup", function(){
+    fetch("/reset", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    stockfish.postMessage("setoption name Skill Level value ") + $("#strength").val()
+    currentTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    currentTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
+    fetch("/boardSetup", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ trigger: true })
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentBoard = data.message
+        whiteActive = 1
+        updateBoard()
+        timeFetch("initTimer")
+        $(".line").empty()
+        $(".mhEntry").remove()
+        $("#whiteTime").css("background-color", "tan")
+        $("#blackTime").css("background-color", "forestgreen")
+        $("#overlay").css("opacity", "0")
+        runTimer = true
+        boardHistory = [
+            [[21, 19, 20, 22, 17, 20, 19, 21],
+            [18, 18, 18, 18, 18, 18, 18, 18],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [10, 10, 10, 10, 10, 10, 10, 10],
+            [13, 11, 12, 14, 9, 12, 11, 13]]
+        ]
+        halfMoves = 0
+        displayedBoard = 0
+        timerUpdates()
+    });
+    playerIsWhite = true
+    $("#mid").css("pointer-events", "false")
+    $("#mid").animate({
+        opacity: 0
+    }, {
+        duration: 100,
+        easing: "swing"
+    })
 })

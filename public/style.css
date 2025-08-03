@@ -233,3 +233,104 @@ div{
 .inEngineDetails{
     float: left;
 }
+#mid{
+    width: 20vw;
+    height: 50vh;
+    z-index: 200;
+    background-color:teal;
+    position: absolute;
+    top:25vh;
+    left: 40vw;
+}
+.midlane{
+    width:100%;
+    text-align: center;
+    vertical-align: middle;
+    height:5%;
+    font-size:2.5vh;
+    line-height: 2.5vh;
+}
+#midTitle{
+    height:16%;
+    font-size:4vh;
+    line-height: 12vh;
+    vertical-align: bottom;
+}
+#midSubtitle{
+    margin-bottom:4vh;
+    font-size: 2vh;
+}
+input[type="range"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 90%;
+    margin: 2vh 0;
+    margin-left: 5%;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 2vh;
+    cursor: pointer;
+    background: #d3d3d3;
+    border-radius: 0.5vh;
+}
+
+input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 2vh;
+    cursor: pointer;
+    background: #d3d3d3;
+    border-radius: 0.5vh;
+}
+
+input[type="range"]::-ms-track {
+    width: 100%;
+    height: 2vh; 
+    cursor: pointer;
+    background: transparent; /* Required for MS browsers */
+    border-color: transparent;
+    border-width: 1.6vh 0;
+    color: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 3vh;
+    width: 1.5vh;
+    border-radius: 0.6vh;
+    background: #04AA6D;
+    cursor: pointer;
+    margin-top: -5px;
+}
+
+input[type="range"]::-moz-range-thumb {
+    height: 3vh;
+    width: 1.5vh;
+    border-radius: 0.6vh;
+    background: #04AA6D;
+    cursor: pointer;
+}
+
+input[type="range"]::-ms-thumb {
+    height: 3vh;
+    width: 1.5vh;
+    border-radius: 0.6vh;
+    background: #04AA6D;
+    cursor: pointer;
+}
+#secInput{
+    margin-bottom: 7.5%;
+}
+.colorButton{
+    width: 45%;
+    height: 10%;
+}
+#playWhite{
+    margin-left: 3.5%;
+    margin-right: 1.5%;
+}
+#playBlack{
+    margin-left: 1.5%;
+    margin-right: 3.5%;
+}

@@ -3,8 +3,54 @@ const app = express()
 const port = 3000
 const {Chess} = require('chess.js')
 const {Timer} = require('timer-node')
-let totallines = 0;
-let evalGame;
+
+let game = new Chess("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+let clickedSquare = ""
+//using the Chess.js package for move validation
+
+const pieceIDs = ["x", "k", "p", "n", "b", "r", "q"]
+//index of the piece name corresponds to the piece value which is added to the colour (8 for white, 16 for black) to identify piece
+
+let whiteActive = true
+//true if white turn, false if black turn
+
+let castlingRights = {
+    white: {kingside: true, queenside: true},
+    black: {kingside: true, queenside: true}
+}
+//kingside: towards the h file; queenside: towards the a file
+
+let enPassantTargetSquare = ""
+//present even if there is not a piece able to capture the en passant (leave blank if not applicable, square (eg "e3") otherwise)
+
+let halfmoveClock = 0
+//used for 50 move rule and FEN notation
+
+let fullmoveCount = 1
+//number of moves since start of game (starts at 1)
+
+let startingBoard = [
+    [21, 19, 20, 22, 17, 20, 19, 21],
+    [18, 18, 18, 18, 18, 18, 18, 18],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [10, 10, 10, 10, 10, 10, 10, 10],
+    [13, 11, 12, 14, 9, 12, 11, 13]
+]
+
+let theBoard = [
+    [21, 19, 20, 22, 17, 20, 19, 21],
+    [18, 18, 18, 18, 18, 18, 18, 18],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [10, 10, 10, 10, 10, 10, 10, 10],
+    [13, 11, 12, 14, 9, 12, 11, 13]
+]
+//board from the starting position of the default version of the game
 
 let chessClock = {w: new Timer(), b: new Timer()}
 
@@ -14,6 +60,53 @@ app.use(express.static('public'))
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`)
 })
+
+app.post('/reset', (req, res) => {
+    game = new Chess("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    clickedSquare = ""
+    //using the Chess.js package for move validation
+
+    whiteActive = true
+    //true if white turn, false if black turn
+
+    castlingRights = {
+        white: {kingside: true, queenside: true},
+        black: {kingside: true, queenside: true}
+    }
+    //kingside: towards the h file; queenside: towards the a file
+
+    enPassantTargetSquare = ""
+    //present even if there is not a piece able to capture the en passant (leave blank if not applicable, square (eg "e3") otherwise)
+
+    halfmoveClock = 0
+    //used for 50 move rule and FEN notation
+
+    fullmoveCount = 1
+    //number of moves since start of game (starts at 1)
+
+    startingBoard = [
+        [21, 19, 20, 22, 17, 20, 19, 21],
+        [18, 18, 18, 18, 18, 18, 18, 18],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [10, 10, 10, 10, 10, 10, 10, 10],
+        [13, 11, 12, 14, 9, 12, 11, 13]
+    ]
+
+    theBoard = [
+        [21, 19, 20, 22, 17, 20, 19, 21],
+        [18, 18, 18, 18, 18, 18, 18, 18],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [10, 10, 10, 10, 10, 10, 10, 10],
+        [13, 11, 12, 14, 9, 12, 11, 13]
+    ]
+    //board from the starting position of the default version of the game
+});
 
 app.post('/gamestate', (req, res) => {
     res.json({message: (game.isCheckmate()==true ? "checkmate" : (game.isDrawByFiftyMoves()==true ? "fifty moves" : (game.isInsufficientMaterial()==true ? "insufficient material" : (game.isStalemate()==true ? "stalemate" : (game.isThreefoldRepetition()==true ? "threefold" : "normal")))))}); // <-- JSON response
@@ -112,54 +205,6 @@ app.post('/computerMove', (req, res) => {
     assignObject()
     res.json({ message: theBoard }); // <-- JSON response
 });
-
-let game = new Chess("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-let clickedSquare = ""
-//using the Chess.js package for move validation
-
-const pieceIDs = ["x", "k", "p", "n", "b", "r", "q"]
-//index of the piece name corresponds to the piece value which is added to the colour (8 for white, 16 for black) to identify piece
-
-let whiteActive = true
-//true if white turn, false if black turn
-
-let castlingRights = {
-    white: {kingside: true, queenside: true},
-    black: {kingside: true, queenside: true}
-}
-//kingside: towards the h file; queenside: towards the a file
-
-let enPassantTargetSquare = ""
-//present even if there is not a piece able to capture the en passant (leave blank if not applicable, square (eg "e3") otherwise)
-
-let halfmoveClock = 0
-//used for 50 move rule and FEN notation
-
-let fullmoveCount = 1
-//number of moves since start of game (starts at 1)
-
-let startingBoard = [
-    [21, 19, 20, 22, 17, 20, 19, 21],
-    [18, 18, 18, 18, 18, 18, 18, 18],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [10, 10, 10, 10, 10, 10, 10, 10],
-    [13, 11, 12, 14, 9, 12, 11, 13]
-]
-
-let theBoard = [
-    [21, 19, 20, 22, 17, 20, 19, 21],
-    [18, 18, 18, 18, 18, 18, 18, 18],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [10, 10, 10, 10, 10, 10, 10, 10],
-    [13, 11, 12, 14, 9, 12, 11, 13]
-]
-//board from the starting position of the default version of the game
 
 function toFEN(input){
     let outputFEN = ""
