@@ -1,10 +1,39 @@
 body{
     background-color: #0d0e12;
-    color: #7fbab5ff;
+    color: #f1f3f5;
+    box-sizing:border-box;
+    margin: 0;
 }
 
 div{
     float: down;
+}
+#banner{
+    height: 5vh;
+    margin-bottom:3vh;
+    box-sizing: border-box;
+    border-bottom: 2px solid #373a40;
+    background-color: #1a1b1e;
+}
+#bannerText{
+    font-size: 3.5vh;
+    line-height: 5vh;
+    margin-right: 69vw;
+    margin-left: 1vw;
+    vertical-align: middle;
+    text-align: left;
+    float:left;
+    width: 14vw;
+}
+#bannerLink{
+    font-size: 2vh;
+    line-height: 5vh;
+    margin-right: 1vw;
+    vertical-align: middle;
+    text-align: right;
+    float:left;
+    width: 15vw;
+    color: #f1f3f5;
 }
 #overlay{
     z-index:100;
@@ -17,15 +46,20 @@ div{
     top:0px;
     pointer-events:none;
 }
-
 #board{
     width: 80vh;
-    aspect-ratio: 1
+    aspect-ratio: 1;
+    border-top-right-radius: 1vh;
+    border-bottom-right-radius: 1vh;
+    overflow: hidden;
 }
 #evalLeft{
     height: 80vh;
     width: 2.5vh;
     background-color: white;
+    border-top-left-radius: 1vh;
+    border-bottom-left-radius: 1vh;
+    overflow: hidden;
 }
 #evalLeftFill{
     width: 100%;
@@ -42,10 +76,10 @@ div{
     height: 10vh;
 }
 .black{
-    background-color:forestgreen;
+    background-color:#868e96;
 }
 .white{
-    background-color: tan;
+    background-color: #e9ecef;
 }
 .boardAlignH{
     height: 80vh;
@@ -55,22 +89,27 @@ div{
     width: 80vh;
 }
 #whiteTime{
-    background-color: tan;
+    background-color: #e9ecef;
+    color: #101113;
 }
 #blackTime{
-    background-color: forestgreen;
+    background-color: #868e96;
 }
 .inRightPanel{
     width:80vh;
+    background-color:#1a1b1e;
+    box-sizing:border-box;
+    border: 2px solid #373a40;
 }
 #engineDetails{
     width: 100%;
     height: 5vh;
+    border-top-right-radius: 1vh;
+    border-top-left-radius: 1vh;
 }
 .line{
     height: 3vh;
     width: 100%;
-    color:black;
     font-size: 2.5vh;
     vertical-align: middle;
     line-height:3vh;
@@ -78,6 +117,10 @@ div{
     overflow-x: auto;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    background-color: #1a1b1e;
+    box-sizing:border-box;
+    border: 2px solid #373a40;
+    border-radius: none;
 }
 .line::-webkit-scrollbar{
     display: none;
@@ -108,6 +151,8 @@ div{
 #gameDetails{
     width: 100%;
     height: 10vh;
+    border-bottom-left-radius: 1vh;
+    border-bottom-right-radius: 1vh;
 }
 .vspacer{
     width: 6.25vh;
@@ -116,27 +161,6 @@ div{
 #vspacer2{
     width: 2.5vh;
 }
-#engineDetails{
-    background-color:darkgrey;
-}
-#line1{
-    background-color: lightgrey;
-}
-#line2{
-    background-color: darkgrey;
-}
-#line3{
-    background-color: lightgrey;
-}
-#line4{
-    background-color: darkgrey;
-}
-#line5{
-    background-color: lightgrey;
-}
-#moveHistoryContainer{
-    background-color: darkgrey;
-}
 .historyColumn{
     width: 50%;
     min-height: 100%;
@@ -144,17 +168,10 @@ div{
 }
 .mhEntry{
     height:3.75vh;
-    color: black;
     font-size: 3vh;
     vertical-align:middle;
     line-height: 3.75vh;
     text-align:center;
-}
-#timerContainer{
-    background-color: lightgrey;
-}
-#gameDetails{
-    background-color: darkgrey;
 }
 .hspacer{
     height: 2.5vh;
@@ -196,7 +213,6 @@ div{
 #evalScore{
     height: 100%;
     width: 15%;
-    color: black;
     font-size: 4vh;
     line-height: 5vh;
     text-align: left;
@@ -206,7 +222,6 @@ div{
 #engineName{
     height: 100%;
     width: 37.5%;
-    color: black;
     font-size: 2.25vh;
     line-height: 5vh;
     text-align: center;
@@ -215,7 +230,6 @@ div{
 #nodeDetails{
     height: 100%;
     width: 30%;
-    color: black;
     font-size: 2.25vh;
     line-height: 5vh;
     text-align: center;
@@ -224,7 +238,6 @@ div{
 #depth{
     height: 100%;
     width: 15%;
-    color: black;
     font-size: 2.25vh;
     line-height: 5vh;
     text-align: left;
@@ -234,13 +247,16 @@ div{
     float: left;
 }
 #mid{
-    width: 20vw;
+    max-width: 20vw;
     height: 50vh;
     z-index: 200;
-    background-color:teal;
     position: absolute;
     top:25vh;
     left: 40vw;
+    background-color: #1a1b1e;
+    box-sizing:border-box;
+    border-radius:2vh;
+    border: 4px solid #373a40;
 }
 .midlane{
     width:100%;
@@ -299,7 +315,7 @@ input[type="range"]::-webkit-slider-thumb {
     height: 3vh;
     width: 1.5vh;
     border-radius: 0.6vh;
-    background: #04AA6D;
+    background: #1864ab;
     cursor: pointer;
     margin-top: -5px;
 }
@@ -308,7 +324,7 @@ input[type="range"]::-moz-range-thumb {
     height: 3vh;
     width: 1.5vh;
     border-radius: 0.6vh;
-    background: #04AA6D;
+    background: #1864ab;
     cursor: pointer;
 }
 
@@ -316,7 +332,7 @@ input[type="range"]::-ms-thumb {
     height: 3vh;
     width: 1.5vh;
     border-radius: 0.6vh;
-    background: #04AA6D;
+    background: #1864ab;
     cursor: pointer;
 }
 #secInput{
@@ -325,6 +341,7 @@ input[type="range"]::-ms-thumb {
 .colorButton{
     width: 45%;
     height: 10%;
+    font-size: 2vh;
 }
 #playWhite{
     margin-left: 3.5%;

@@ -388,6 +388,9 @@ function assignTime(){
 }
 
 function initialisePage(){
+    $("body").append("<div id='banner'></div>")
+    $("#banner").append("<div id='bannerText'>Chess Trainer</div>")
+    $("#banner").append("<a id='bannerLink' href='https://github.com/nmrugg/stockfish.js' target='_blank'>Stockfish ⮺</div>")
     $("body").append("<div id='boardContainer'></div>")
     $("#boardContainer").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer")
     $("#boardContainer").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH")
@@ -687,8 +690,8 @@ $("#playWhite").on("mouseup", function(){
         timeFetch("initTimer")
         $(".line").empty()
         $(".mhEntry").remove()
-        $("#whiteTime").css("background-color", "tan")
-        $("#blackTime").css("background-color", "forestgreen")
+        $("#whiteTime").css("background-color", "#e9ecef")
+        $("#blackTime").css("background-color", "#868e96")
         $("#overlay").css("opacity", "0")
         runTimer = true
         boardHistory = [
@@ -753,8 +756,8 @@ $("#playBlack").on("mouseup", function(){
         timeFetch("initTimer")
         $(".line").empty()
         $(".mhEntry").remove()
-        $("#whiteTime").css("background-color", "tan")
-        $("#blackTime").css("background-color", "forestgreen")
+        $("#whiteTime").css("background-color", "#e9ecef")
+        $("#blackTime").css("background-color", "#868e96")
         $("#overlay").css("opacity", "0")
         runTimer = true
         boardHistory = [
