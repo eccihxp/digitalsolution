@@ -58,7 +58,6 @@ app.use(express.json())
 app.use(express.static('public'))
 
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`)
 })
 
 app.post('/reset', (req, res) => {
@@ -118,7 +117,6 @@ app.post('/history', (req, res) => {
 
 app.post('/convert', (req, res) => {
     let evalGame = new Chess()
-    console.log(req.body.line)
     for(let i=0;i<req.body.line.length;i++){
         try {
             evalGame.move(req.body.line[i])

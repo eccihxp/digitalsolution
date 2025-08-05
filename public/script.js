@@ -16,6 +16,7 @@ let startingTime = {
     wtime: 60000,
     btime: 60000
 }
+let increment = 0
 
 let currentFEN = ""
 let boardHistory = [
@@ -83,58 +84,10 @@ stockfish.addEventListener('message', function (e) {
         .then(data => {
             currentBoard = data.message
             updateBoard()
+            addBoard()
             timeFetch("switchTimer")
         });
     }
-    /*else if(e.data.includes("info")==true){
-        fetch("/rqSide", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({placehold: true})
-        })
-        .then(res => res.json())
-        .then(data => {
-            whiteActive = data.message
-        });
-        if(e.data.includes("cp") == true){
-            let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100)
-            console.log(eval)
-            eval = eval.toPrecision(4).toString()
-            console.log(eval)
-            eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
-            console.log(eval)
-            let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
-            let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
-            let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
-            $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
-            $("#depth").html("<strong>Depth:</strong> " + depth)
-            $("#evalScore").html((eval>=0 ? "+" : "") + eval)
-            //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
-            //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
-            $("#evalLeftFill").animate({
-                height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
-                }, {
-                duration: 100,
-                easing: "swing"
-            })
-            //console.log("evaluation is: " + eval)
-        }
-        else if(e.data.includes("mate") == true){
-            //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
-            //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
-            $("#evalLeftFill").animate({
-                height: (e.data.split(" ")[e.data.split(" ").indexOf("mate")+1]>0 ? "100%" : "0%")
-                }, {
-                duration: 100,
-                easing: "swing"
-            })
-        }
-        else{
-            //console.log("evaluation error")
-        }
-    }*/
 });
 
 stockfish.postMessage("uci");
@@ -335,7 +288,6 @@ function updateBoard(){
         analysis.postMessage("go depth 16")
     });
     gamestate()
-    addBoard()
 }
 
 async function timerUpdates() {
@@ -356,8 +308,17 @@ function timeFetch(label){
     })
         .then(res => res.json())
         .then(data => {
+            if(label=="switchTimer"){
+                console.log(currentTime)
+                if(halfMoves%2==1){
+                    startingTime["wtime"]+=increment
+                } else{
+                    startingTime["btime"]+=increment
+                }
+            }
             currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
             currentTime["btime"] = (startingTime["btime"]-data.btime)
+            console.log(currentTime)
             assignTime()
     });
 }
@@ -436,6 +397,12 @@ function initialisePage(){
     $("#timerContainer").append("<div id='whiteTime'></div>").children().last().addClass("timer")
     $("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
     $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
+    $("#gameDetails").append("<div id='engineOptions'></div>").children().last().addClass("options")
+    $("#engineOptions").append("<button id='toggleAnalysis'></button>").children().last().addClass("analysisButton")
+    $("#engineOptions").append("<button id='toggleEngine'></button>").children().last().addClass("analysisButton")
+    $("#gameDetails").append("<div id='gameOptions'></div>").children().last().addClass("options")
+    $("#gameOptions").append("<button id='exportFen'></button>").children().last().addClass("gameButton")
+    $("#gameOptions").append("<button id='surrender'></button>").children().last().addClass("gameButton")
 
     $("body").append("<div id='hspacer2'></div>").children().last().addClass("hspacer")
     $("body").append("<div id='bottomPanel'></div>")
@@ -460,6 +427,8 @@ function initialisePage(){
     $("#mid").append("<input id='minInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
     $("#mid").append("<div id='secTitle'>Seconds: 30</div>").children().last().addClass("midlane")
     $("#mid").append("<input id='secInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
+    $("#mid").append("<div id='incTitle'>Increment: 0s</div>").children().last().addClass("midlane")
+    $("#mid").append("<input id='incInput' type='range' min='0' max='60' step='1' value='0'/>").children().last().addClass("midlane slider")
     $("#mid").append("<button id='playWhite' value='Play as White'>Play as White</button>").children().last().addClass("midlane colorButton")
     $("#mid").append("<button id='playBlack' value='Play as Black'>Play as Black</button>").children().last().addClass("midlane colorButton")
 
@@ -592,6 +561,7 @@ $("#board").on("click", ".pieceImg", function(){
                 //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
+                addBoard()
                 if(playingEngine){
                     computer()
                 } else{
@@ -692,6 +662,11 @@ $("#secInput").on("change", function(){
     startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
     console.log(currentTime)
     console.log(startingTime)
+})
+
+$("#incInput").on("change", function(){
+    $("#incTitle").html("Increment: " + this.value + "s")
+    increment = this.value*1000
 })
 
 $("#playWhite").on("mouseup", function(){
