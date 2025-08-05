@@ -40,6 +40,7 @@ let moveHistory = ""
 let mhWhite = []
 let mhBlack = []
 let runTimer = true
+let playingEngine = true
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
@@ -50,6 +51,13 @@ initialisePage()
 
 $(document).ready(function(e){
     timeFetch("resetTimer") 
+    fetch("/reset", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
 })
 
 stockfish.addEventListener('message', function (e) {
@@ -294,10 +302,12 @@ function updateHistory(){
                 }
             }
             $(".historyColumn").empty()
+            $("#mhNumberColumn").empty()
             mhBlack.map(function(cv, index, arr){
                 $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
             })
             mhWhite.map(function(cv, index, arr){
+                $("#mhNumberColumn").append("<div>" + (index+1) + "</div>").children().last().addClass("moveNumber")
                 $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
             })
     });
@@ -419,6 +429,7 @@ function initialisePage(){
     $("#rightPanel").append("<div id='line4'></div>").children().last().addClass("inRightPanel line")
     $("#rightPanel").append("<div id='line5'></div>").children().last().addClass("inRightPanel line")
     $("#rightPanel").append("<div id='moveHistoryContainer'></div>").children().last().addClass("inRightPanel")
+    $("#moveHistoryContainer").append("<div id='mhNumberColumn'></div>")
     $("#moveHistoryContainer").append("<div id='moveHistoryLeft'></div>").children().last().addClass("historyColumn")
     $("#moveHistoryContainer").append("<div id='moveHistoryRight'></div>").children().last().addClass("historyColumn")
     $("#rightPanel").append("<div id='timerContainer'></div>").children().last().addClass("inRightPanel")
@@ -443,8 +454,8 @@ function initialisePage(){
     $("body").append("<div id='mid'></div>")
     $("#mid").append("<div id='midTitle'>Start A Game</div>").children().last().addClass("midlane")
     $("#mid").append("<div id='midSubtitle'>Choose Your Settings</div>").children().last().addClass("midlane")
-    $("#mid").append("<div id='strengthTitle'>Strength: 10</div>").children().last().addClass("midlane")
-    $("#mid").append("<input id='strengthInput' type='range' min='0' max='20' step='1' />").children().last().addClass("midlane slider")
+    $("#mid").append("<div id='strengthTitle'>Strength: 20</div>").children().last().addClass("midlane")
+    $("#mid").append("<input id='strengthInput' type='range' min='1' max='20' value='20' step='1' />").children().last().addClass("midlane slider")
     $("#mid").append("<div id='minTitle'>Minutes: 30</div>").children().last().addClass("midlane")
     $("#mid").append("<input id='minInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
     $("#mid").append("<div id='secTitle'>Seconds: 30</div>").children().last().addClass("midlane")
@@ -475,6 +486,7 @@ function gamestate(){
 
 function endGame(){
     if(["checkmate", "timeout", "forfeit"].includes(status)){
+        timeFetch("stopTimer")
         if(status=="timeout"){
             winner = (currentTime["wtime"]>currentTime["btime"] ? "White" : "Black")
         } else if(status=="forfeit"){
@@ -505,6 +517,7 @@ function endGame(){
             })
         }, 500)
     } else if(["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].includes(status)){
+        timeFetch("stopTimer")
         console.log("APPLY OVERLAY")
         $("#overlay").css("background-color", "yellow")
         let drawResponses = ["By Fifty Move Rule", "By Insufficient Material", "By Stalemate", "By Threefold Repetition", "By Agreement"]
@@ -579,7 +592,26 @@ $("#board").on("click", ".pieceImg", function(){
                 //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
-                computer()
+                if(playingEngine){
+                    computer()
+                } else{
+                    fetch("/rqFen", {
+                        method: "POST",
+                        headers: {
+                        "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ placehold:  false})
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        currentFEN = data.message
+                        //console.log("FEN FOUND: " + data.message)
+                        //console.log("current FEN: " + currentFEN)
+                        timeFetch("switchTimer")
+                        analysis.postMessage("position fen " + currentFEN)
+                        analysis.postMessage("go depth 16")
+                    });
+                }
             });
         }
     }

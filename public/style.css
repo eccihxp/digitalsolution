@@ -162,7 +162,7 @@ div{
     width: 2.5vh;
 }
 .historyColumn{
-    width: 50%;
+    width: 45%;
     min-height: 100%;
     float: left;
 }
@@ -172,6 +172,22 @@ div{
     vertical-align:middle;
     line-height: 3.75vh;
     text-align:center;
+    border: 1px solid #373a40;
+    box-sizing: border-box;
+}
+#mhNumberColumn{
+    width:10%;
+    min-height:100%;
+    float: left;
+}
+.moveNumber{
+    height:3.75vh;
+    font-size: 3vh;
+    vertical-align: middle;
+    line-height:3.75vh;
+    text-align: center;
+    border: 1px solid #373a40;
+    box-sizing: border-box;
 }
 .hspacer{
     height: 2.5vh;
