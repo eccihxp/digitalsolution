@@ -110,11 +110,12 @@ div{
 .line{
     height: 3vh;
     width: 100%;
-    font-size: 2.5vh;
+    font-size: 2.25vh;
     vertical-align: middle;
     line-height:3vh;
     white-space: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none;  /* Internet Explorer 10+ */
     background-color: #1a1b1e;
@@ -273,6 +274,7 @@ div{
     box-sizing:border-box;
     border-radius:2vh;
     border: 4px solid #373a40;
+    overflow: hidden;
 }
 .midlane{
     width:100%;
@@ -376,8 +378,18 @@ input[type="range"]::-ms-thumb {
 .analysisButton{
     width:100%;
     height:50%;
+    line-height: 100%;
+    font-size: 2vh;
+    text-decoration: solid;
+    text-align: center;
+    vertical-align: middle;
 }
 .gameButton{
     width:100%;
     height:50%;
+    line-height: 100%;
+    font-size: 2vh;
+    text-decoration: solid;
+    text-align: center;
+    vertical-align: middle;
 }

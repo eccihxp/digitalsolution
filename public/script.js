@@ -41,6 +41,7 @@ let moveHistory = ""
 let mhWhite = []
 let mhBlack = []
 let runTimer = true
+let showAnalysis = true
 let playingEngine = true
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
@@ -62,7 +63,6 @@ $(document).ready(function(e){
 })
 
 stockfish.addEventListener('message', function (e) {
-    //console.log(e.data);
     if(e.data === "uciok"){
         stockfish.postMessage("ucinewgame");
         stockfish.postMessage("isready");
@@ -72,7 +72,6 @@ stockfish.addEventListener('message', function (e) {
         stockfish.postMessage("setoption name Skill Level value 20")
     }
     else if(e.data.includes("bestmove") == true){
-        //console.log(e.data.split(" ")[1])
         fetch("/computerMove", {
                 method: "POST",
                 headers: {
@@ -119,11 +118,8 @@ analysis.addEventListener('message', function (e) {
             });
             if(e.data.includes("cp") == true){
                 let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100*whiteActive)
-                console.log(eval)
                 eval = eval.toPrecision(4).toString()
-                console.log(eval)
                 eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
-                console.log(eval)
                 let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
                 let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
                 let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
@@ -131,29 +127,21 @@ analysis.addEventListener('message', function (e) {
                 $("#depth").html("<strong>Depth:</strong> " + depth)
                 if(e.data.split(" ")[e.data.split(" ").indexOf("depth")+1]>12){
                     $("#evalScore").html((eval>=0 ? "+" : "") + eval)
-                    //console.log((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100))
-                    //$("#evalLeftFill").css("height", ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%"))
                     $("#evalLeftFill").animate({
                         height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
                         }, {
                         duration: 50,
                         easing: "swing"
                     })
-                    //console.log("evaluation is: " + eval)
                 }
             }
             else if(e.data.includes("mate") == true){
-                //console.log("mate in: " + (e.data.split(" ")[e.data.split(" ").indexOf("mate") + 1] * -whiteActive))
-                //$("#evalLeftFill").css("height", (whiteActive==true ? "100%" : "0%"))
                 $("#evalLeftFill").animate({
                     height: (halfMoves%2==0 ? "100%" : "0%")
                     }, {
                     duration: 100,
                     easing: "swing"
                 })
-            }
-            else{
-                //console.log("evaluation error")
             }
         }
         fetch("/history", {
@@ -165,11 +153,9 @@ analysis.addEventListener('message', function (e) {
         })
         .then(res => res.json())
         .then(data => {
-            //console.log(data.message)
             moveHistory = data.message
         });
         let lineMH = moveHistory.concat(e.data.split(" pv ")[1].split(" "))
-        console.log(lineMH)
         fetch("/convert", {
             method: "POST",
             headers: {
@@ -180,7 +166,6 @@ analysis.addEventListener('message', function (e) {
         .then(res => res.json())
         .then(data => {
             let lineOutput = data.message
-            console.log(lineOutput)
             let lineOutputString = "1. ";
             let moveNo = 1
             for(let i=1;i<lineOutput.length+1;i++){
@@ -191,44 +176,7 @@ analysis.addEventListener('message', function (e) {
                 lineOutputString += lineOutput[i-1] + " "
             }
             $("#line" + pv).html(lineOutputString)
-            //console.log(data.message)
         });
-        //console.log(e.data.split(" pv ")[1])
-        /*fetch("/rqFen", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ placehold:  false})
-        })
-        .then(res => res.json())
-        .then(data => {
-            currentFEN = data.message
-            
-            fetch("/convert", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({line: e.data.split(" pv ")[1], fen: data.message})
-            })
-            .then(res => res.json())
-            .then(data => {
-                let lineOutput = data.message
-                console.log(lineOutput)
-                let lineOutputString = "1. ";
-                let moveNo = 1
-                for(let i=1;i<lineOutput.length+1;i++){
-                    if(i%2==1 && i!=1){
-                        moveNo++
-                        lineOutputString += " " + moveNo + ". "
-                    }
-                    lineOutputString += lineOutput[i-1] + " "
-                }
-                $("#line" + pv).html(lineOutputString)
-                //console.log(data.message)
-            });
-        });*/
     }
 });
 
@@ -309,7 +257,6 @@ function timeFetch(label){
         .then(res => res.json())
         .then(data => {
             if(label=="switchTimer"){
-                console.log(currentTime)
                 if(halfMoves%2==1){
                     startingTime["wtime"]+=increment
                 } else{
@@ -318,7 +265,6 @@ function timeFetch(label){
             }
             currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
             currentTime["btime"] = (startingTime["btime"]-data.btime)
-            console.log(currentTime)
             assignTime()
     });
 }
@@ -398,11 +344,11 @@ function initialisePage(){
     $("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
     $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
     $("#gameDetails").append("<div id='engineOptions'></div>").children().last().addClass("options")
-    $("#engineOptions").append("<button id='toggleAnalysis'></button>").children().last().addClass("analysisButton")
-    $("#engineOptions").append("<button id='toggleEngine'></button>").children().last().addClass("analysisButton")
+    $("#engineOptions").append("<button id='toggleAnalysis'>Toggle Analysis: On</button>").children().last().addClass("analysisButton")
+    $("#engineOptions").append("<button id='toggleEngine'>Toggle Engine: On</button>").children().last().addClass("analysisButton")
     $("#gameDetails").append("<div id='gameOptions'></div>").children().last().addClass("options")
-    $("#gameOptions").append("<button id='exportFen'></button>").children().last().addClass("gameButton")
-    $("#gameOptions").append("<button id='surrender'></button>").children().last().addClass("gameButton")
+    $("#gameOptions").append("<button id='exportFen'>Export game FEN</button>").children().last().addClass("gameButton")
+    $("#gameOptions").append("<button id='surrender'>Surrender</button>").children().last().addClass("gameButton")
 
     $("body").append("<div id='hspacer2'></div>").children().last().addClass("hspacer")
     $("body").append("<div id='bottomPanel'></div>")
@@ -448,7 +394,6 @@ function gamestate(){
     .then(res => res.json())
     .then(data => {
         status = data.message
-        console.log(status)
         endGame()
     });
 }
@@ -459,15 +404,17 @@ function endGame(){
         if(status=="timeout"){
             winner = (currentTime["wtime"]>currentTime["btime"] ? "White" : "Black")
         } else if(status=="forfeit"){
-            winner = (playerIsWhite ? "Black" : "White")
         } else{
             winner = (halfMoves%2==0 ? "Black" : "White")
         }
-        console.log("APPLY OVERLAY")
         $("#overlay").css("background-color", "red")
         let lossResponses = ["By Checkmate", "By Timeout", "By Surrender"]
         $("#midTitle").html(winner + " Wins")
         $("#midSubtitle").html(lossResponses[["checkmate", "timeout", "forfeit"].indexOf(status)])
+        $("#midTitle").css("background-color", (winner == "White" ? "#e9ecef" : "#868e96"))
+        $("#midSubtitle").css("background-color", (winner == "White" ? "#e9ecef" : "#868e96"))
+        $("#midTitle").css("color", (winner == "White" ? "#101113" : "#f1f3f5")) 
+        $("#midSubtitle").css("color", (winner == "White" ? "#101113" : "#f1f3f5"))
         setTimeout(()=>{
             $("#overlay").animate({
                 opacity: "50%"
@@ -487,11 +434,14 @@ function endGame(){
         }, 500)
     } else if(["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].includes(status)){
         timeFetch("stopTimer")
-        console.log("APPLY OVERLAY")
         $("#overlay").css("background-color", "yellow")
         let drawResponses = ["By Fifty Move Rule", "By Insufficient Material", "By Stalemate", "By Threefold Repetition", "By Agreement"]
         $("#midTitle").html("Draw")
         $("#midSubtitle").html(drawResponses[["checkmate", "timeout", "forfeit"].indexOf(status)])
+        $("#midTitle").css("background-color", "#1a1b1e") 
+        $("#midSubtitle").css("background-color", "#1a1b1e")
+        $("#midTitle").css("color", "#f1f3f5") 
+        $("#midSubtitle").css("color", "#f1f3f5")
         setTimeout(()=>{
             $("#overlay").animate({
                 opacity: "50%"
@@ -529,12 +479,8 @@ function computer(){
     .then(res => res.json())
     .then(data => {
         currentFEN = data.message
-        //console.log("FEN FOUND: " + data.message)
-        //console.log("current FEN: " + currentFEN)
         timeFetch("switchTimer")
         stockfish.postMessage("position fen " + currentFEN)
-        //console.log(String(currentTime["wtime"]))
-        //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
         stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
         analysis.postMessage("position fen " + currentFEN)
         analysis.postMessage("go depth 16")
@@ -546,7 +492,6 @@ $("#board").on("click", ".pieceImg", function(){
     $(".pieceImg").css("background-color", "transparent")
     let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
     for(let i=0;i<movableSquares.length;i++){
-        console.log(movableSquares[i])
         if(clickedSquare == movableSquares[i]["to"]){
             newSquare = false
             fetch("/makeMove", {
@@ -558,7 +503,6 @@ $("#board").on("click", ".pieceImg", function(){
             })
             .then(res => res.json())
             .then(data => {
-                //console.log(data.message);
                 currentBoard = data.message
                 updateBoard()
                 addBoard()
@@ -575,8 +519,6 @@ $("#board").on("click", ".pieceImg", function(){
                     .then(res => res.json())
                     .then(data => {
                         currentFEN = data.message
-                        //console.log("FEN FOUND: " + data.message)
-                        //console.log("current FEN: " + currentFEN)
                         timeFetch("switchTimer")
                         analysis.postMessage("position fen " + currentFEN)
                         analysis.postMessage("go depth 16")
@@ -628,7 +570,6 @@ $("#ffwd").on("mouseup", function(){
 })
 
 $("#pause").on("mouseup", function(){
-    console.log(halfMoves-displayedBoard)
     for(let i=0;i<(halfMoves-displayedBoard);i++){
         setTimeout(() => {
             displayedBoard++
@@ -645,13 +586,10 @@ $("#strengthInput").on("change", function(){
 
 $("#minInput").on("change", function(){
     $("#minTitle").html("Minutes: " + this.value)
-    console.log(parseInt($("#minInput").val()))
     currentTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
     currentTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
     startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
     startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
-    console.log(currentTime)
-    console.log(startingTime)
 })
 
 $("#secInput").on("change", function(){
@@ -660,8 +598,6 @@ $("#secInput").on("change", function(){
     currentTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
     startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
     startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000)
-    console.log(currentTime)
-    console.log(startingTime)
 })
 
 $("#incInput").on("change", function(){
@@ -808,13 +744,48 @@ $("#playBlack").on("mouseup", function(){
     .then(res => res.json())
     .then(data => {
         currentFEN = data.message
-        //console.log("FEN FOUND: " + data.message)
-        //console.log("current FEN: " + currentFEN)
         stockfish.postMessage("position fen " + currentFEN)
-        //console.log(String(currentTime["wtime"]))
-        //console.log("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
         stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
         analysis.postMessage("position fen " + currentFEN)
         analysis.postMessage("go depth 16")
     });
+})
+
+$("#toggleAnalysis").on("mouseup", function(){
+    showAnalysis = !showAnalysis
+    $(".inEngineDetails").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
+    $(".line").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
+    $("#toggleAnalysis").html("Toggle Analysis: " + (showAnalysis == true ? "On" : "Off"))
+})
+
+$("#toggleEngine").on("mouseup", function(){
+    playingEngine = !playingEngine
+    $("#toggleEngine").html("Toggle Engine: " + (playingEngine == true ? "On" : "Off"))
+})
+
+$("#exportFen").on("mouseup", function(){
+    fetch("/rqFen", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    .then(res => res.json())
+    .then(data => {
+        navigator.clipboard.writeText(data.message)
+        alert("Copied the text: " + data.message)
+    });
+})
+
+$("#surrender").on("mouseup", function(){
+    if(playingEngine == false){
+        winner = (whiteActive==true ? "Black" : "White")
+        status = "forfeit"
+        endGame()
+    } else{
+        winner = (playerIsWhite==true ? "Black" : "White")
+        status = "forfeit"
+        endGame()
+    }
 })
