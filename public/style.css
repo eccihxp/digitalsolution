@@ -269,7 +269,7 @@ div{
     z-index: 200;
     position: absolute;
     top:17.5vh;
-    left: 40vw;
+    left: 25vw;
     background-color: #1a1b1e;
     box-sizing:border-box;
     border-radius:2vh;
@@ -293,6 +293,86 @@ div{
 #midSubtitle{
     margin-bottom:2vh;
     font-size: 2vh;
+}
+#support{
+    width: 29vw;
+    max-width: 29vw;
+    height: 65vh;
+    z-index: 200;
+    position: absolute;
+    top:17.5vh;
+    left: 46vw;
+    background-color: #1a1b1e;
+    box-sizing:border-box;
+    border-radius:2vh;
+    border: 4px solid #373a40;
+    overflow: hidden;
+}
+.support{
+    text-align: center;
+    vertical-align: middle;
+    height:3.5vh;
+    font-size:2.6vh;
+    line-height: 3.5vh;
+    text-align:left;
+    float: left;
+}
+.arrow{
+    width: 10%;
+    height: 4vh;
+    vertical-align:middle;
+    text-align:center;
+    line-height:4vh; 
+    font-size: 6.3vh;
+    float: left;
+}
+#supportAnalysis{
+    height:7vh;
+    width:85%;
+    margin-top: 1vh;
+    margin-left:1vh;
+}
+#supportHistory{
+    height:3.5vh;
+    width:85%;
+    margin-top: 2.2vh;
+    margin-left:1vh;
+}
+#supportStrength{
+    height:7vh;
+    width: 85%;
+    margin-top: 2.2vh;
+    margin-left:1vh;
+}
+#supportMinutes{
+    height:7vh;
+    width: 85%;
+    margin-top: 3.5vh;
+    margin-left:1vh;
+}
+#supportSeconds{
+    height:7vh;
+    width: 85%;
+    margin-top: 3.5vh;
+    margin-left:1vh;
+}
+#supportIncrement{
+    height:3.5vh;
+    width: 85%;
+    margin-top: 3.5vh;
+    margin-left:1vh;
+}
+#supportOptions{
+    height:3.5vh;
+    width: 75%;
+    margin-top: 1%;
+    margin-left:1vh;
+}
+#supportTimer{
+    height:3.5vh;
+    width: 85%;
+    margin-top: 2.2vh;
+    margin-left:1vh;
 }
 input[type="range"] {
     appearance: none;
@@ -383,6 +463,16 @@ input[type="range"]::-ms-thumb {
     text-decoration: solid;
     text-align: center;
     vertical-align: middle;
+    box-sizing: border-box;
+    border-bottom: 2px solid #373a40;
+    background-color: #1a1b1e;
+    color: #f1f3f5;
+}
+#toggleAnalysis{
+    background-color: green;
+}
+#toggleEngine{
+    background-color: green;
 }
 .gameButton{
     width:100%;
@@ -392,4 +482,8 @@ input[type="range"]::-ms-thumb {
     text-decoration: solid;
     text-align: center;
     vertical-align: middle;
+    box-sizing: border-box;
+    border-bottom: 2px solid #373a40;
+    background-color: #1a1b1e;
+    color: #f1f3f5;
 }

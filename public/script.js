@@ -378,6 +378,25 @@ function initialisePage(){
     $("#mid").append("<button id='playWhite' value='Play as White'>Play as White</button>").children().last().addClass("midlane colorButton")
     $("#mid").append("<button id='playBlack' value='Play as Black'>Play as Black</button>").children().last().addClass("midlane colorButton")
 
+    $("body").append("<div id='support'></div>")
+    $("#support").append("<div id='supportAnalysis'>This panel for experienced chess players shows engine details</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>→</strong></div>").children().last().addClass("arrow").css("margin-top", "1.5vh").css("margin-bottom", "1.5vh")
+    $("#support").append("<div id='supportHistory'>Recently played moves are shown here</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>→</strong></div>").children().last().addClass("arrow").css("margin-top", "1.5vh").css("margin-bottom", "1.5vh")
+    $("#support").append("<div><strong>←</strong></div>").children().last().addClass("arrow").css("margin-top", "1.5vh").css("margin-bottom", "1.5vh")
+    $("#support").append("<div id='supportStrength'>This controls the strength of the engine (1 is roughly 2500 Elo, 20 is roughly 3750 Elo)</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>←</strong></div>").children().last().addClass("arrow").css("margin-top", "2.8vh").css("margin-bottom", "1.5vh")
+    $("#support").append("<div id='supportMinutes'>This adds the chosen number of minutes to the timer</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>←</strong></div>").children().last().addClass("arrow").css("margin-top", "2.8vh").css("margin-bottom", "1.5vh")
+    $("#support").append("<div id='supportSeconds'>This adds the chosen number of seconds to the timer</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>←</strong></div>").children().last().addClass("arrow").css("margin-top", "2.8vh")
+    $("#support").append("<div id='supportIncrement'>Adds seconds to the timer after each move</div>").children().last().addClass("support")
+    $("#support").append("<div id='supportTimer'>The time left per side is shown here</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>→</strong></div>").children().last().addClass("arrow").css("margin-top", "1.5vh").css("margin-bottom", "1.5vh")
+    $("#support").append("<div><strong>↙</strong></div>").children().last().addClass("arrow").css("line-height", "3.5vh")
+    $("#support").append("<div id='supportOptions'>Game controls shown here:</div>").children().last().addClass("support")
+    $("#support").append("<div><strong>↓</strong></div>").children().last().addClass("arrow").css("line-height", "3.5vh").css("font-size", "3.5vh")
+
     $(".line").empty()
     $(".mhEntry").remove()
 }   
@@ -431,6 +450,15 @@ function endGame(){
                 duration: 100,
                 easing: "swing"
             })
+            $("#support").css("pointer-events", "true")
+            $("#support").css("z-index", "200")
+            $("#support").children().css("pointer-events", "true")
+            $("#support").animate({
+                opacity: "100%"
+            }, {
+                duration: 100,
+                easing: "swing"
+            })
         }, 500)
     } else if(["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].includes(status)){
         timeFetch("stopTimer")
@@ -453,6 +481,15 @@ function endGame(){
             $("#mid").css("z-index", "200")
             $("#mid").children().css("pointer-events", "true")
             $("#mid").animate({
+                opacity: "100%"
+            }, {
+                duration: 100,
+                easing: "swing"
+            })
+            $("#support").css("pointer-events", "true")
+            $("#support").css("z-index", "200")
+            $("#support").children().css("pointer-events", "true")
+            $("#support").animate({
                 opacity: "100%"
             }, {
                 duration: 100,
@@ -661,6 +698,15 @@ $("#playWhite").on("mouseup", function(){
         duration: 100,
         easing: "swing"
     })
+    $("#support").css("pointer-events", "false")
+    $("#support").css("z-index", "-100")
+    $("#support").children().css("pointer-events", "false")
+    $("#support").animate({
+        opacity: 0
+    }, {
+        duration: 100,
+        easing: "swing"
+    })
     $("#board").empty()
     for(let i=8;i>=1;i--){
         $("#board").append("<div></div>").children().last().addClass("row row"+i)
@@ -717,10 +763,10 @@ $("#playBlack").on("mouseup", function(){
         displayedBoard = 0
     });
     playerIsWhite = false
-    $("#mid").css("pointer-events", "false")
-    $("#mid").css("z-index", "-100")
-    $("#mid").children().css("pointer-events", "false")
-    $("#mid").animate({
+    $("#support").css("pointer-events", "false")
+    $("#support").css("z-index", "-100")
+    $("#support").children().css("pointer-events", "false")
+    $("#support").animate({
         opacity: 0
     }, {
         duration: 100,
@@ -756,11 +802,15 @@ $("#toggleAnalysis").on("mouseup", function(){
     $(".inEngineDetails").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
     $(".line").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
     $("#toggleAnalysis").html("Toggle Analysis: " + (showAnalysis == true ? "On" : "Off"))
+    $("#toggleAnalysis").css("background-color", (showAnalysis == true ? "green" : "red"))
+    $("#evalLeft").css("opacity", (showAnalysis == true ? "100%" : "0%"))
+    $("#board").css({"border-top-left-radius": (showAnalysis == true ? "0vh" : "1vh"), "border-bottom-left-radius": (showAnalysis == true ? "0vh" : "1vh")})
 })
 
 $("#toggleEngine").on("mouseup", function(){
     playingEngine = !playingEngine
     $("#toggleEngine").html("Toggle Engine: " + (playingEngine == true ? "On" : "Off"))
+    $("#toggleEngine").css("background-color", (playingEngine == true ? "green" : "red"))
 })
 
 $("#exportFen").on("mouseup", function(){
