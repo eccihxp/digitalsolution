@@ -191,7 +191,11 @@ app.post('/checkMoves', (req, res) => {
 });
 
 app.post('/makeMove', (req, res) => {
-    game.move((clickedSquare.toString() + req.body.moveMade.toString()).toString(), {sloppy: true})
+    game.move({
+        from: clickedSquare.toString(),
+        to: req.body.moveMade.toString(),
+        promotion: req.body.promoteTo
+    }, {sloppy: true})
     toBoardObject(game.fen())
     assignObject()
     res.json({ message: theBoard }); // <-- JSON response

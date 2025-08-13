@@ -43,7 +43,9 @@ let mhBlack = []
 let runTimer = true
 let showAnalysis = true
 let playingEngine = true
+let showTimers = true
 let boardActive = true
+let promotion = "q"
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
@@ -344,12 +346,15 @@ function initialisePage(){
     $("#timerContainer").append("<div id='whiteTime'></div>").children().last().addClass("timer")
     $("#timerContainer").append("<div id='blackTime'></div>").children().last().addClass("timer")
     $("#rightPanel").append("<div id='gameDetails'></div>").children().last().addClass("inRightPanel")
-    $("#gameDetails").append("<div id='engineOptions'></div>").children().last().addClass("options")
-    $("#engineOptions").append("<button id='toggleAnalysis'>Toggle Analysis: On</button>").children().last().addClass("analysisButton")
-    $("#engineOptions").append("<button id='toggleEngine'>Toggle Engine: On</button>").children().last().addClass("analysisButton")
-    $("#gameDetails").append("<div id='gameOptions'></div>").children().last().addClass("options")
-    $("#gameOptions").append("<button id='exportFen'>Export game FEN</button>").children().last().addClass("gameButton")
-    $("#gameOptions").append("<button id='surrender'>Surrender</button>").children().last().addClass("gameButton")
+    $("#gameDetails").append("<div id='options1'></div>").children().last().addClass("options")
+    $("#options1").append("<button id='toggleAnalysis'>Toggle Analysis: On</button>").children().last().addClass("controls")
+    $("#options1").append("<button id='exportFen'>Export game FEN</button>").children().last().addClass("controls")
+    $("#gameDetails").append("<div id='options2'></div>").children().last().addClass("options")
+    $("#options2").append("<button id='toggleEngine'>Toggle Engine: On</button>").children().last().addClass("controls")
+    $("#options2").append("<button id='surrender'>Surrender</button>").children().last().addClass("controls")
+    $("#gameDetails").append("<div id='options3'></div>").children().last().addClass("options")
+    $("#options3").append("<button id='toggleTimers'>Show Timers: On</button>").children().last().addClass("controls")
+    $("#options3").append("<button id='pawnPromotion'>Pawn Promotes To: Queen</button>").children().last().addClass("controls") 
 
     $("body").append("<div id='hspacer2'></div>").children().last().addClass("hspacer")
     $("body").append("<div id='bottomPanel'></div>")
@@ -548,7 +553,7 @@ $("#board").on("click", ".pieceImg", function(){
                     headers: {
                     "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ moveMade:  clickedSquare})
+                    body: JSON.stringify({ moveMade:  clickedSquare, promoteTo: promotion})
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -847,6 +852,14 @@ $("#toggleEngine").on("mouseup", function(){
     $("#toggleEngine").css("background-color", (playingEngine == true ? "green" : "#800000"))
 })
 
+$("#toggleTimers").on("mouseup", function(){
+    showTimers = !showTimers
+    $("#whiteTime").css("color", (showTimers == true ? "#101113" : "transparent"))
+    $("#blackTime").css("color", (showTimers == true ? "#f1f3f5" : "transparent"))
+    $("#toggleTimers").html("Show Timers: " + (showTimers == true ? "On" : "Off"))
+    $("#toggleTimers").css("background-color", (showTimers == true ? "green" : "#800000"))
+})
+
 $("#exportFen").on("mouseup", function(){
     fetch("/rqFen", {
         method: "POST",
@@ -872,4 +885,9 @@ $("#surrender").on("mouseup", function(){
         status = "forfeit"
         endGame()
     }
+})
+
+$("#pawnPromotion").on("mouseup", function(){
+    promotion = ["r", "b", "n", "q"][["q", "r", "b", "n"].indexOf(promotion)]
+    $("#pawnPromotion").html("Pawn Promotes To: " + ["Queen", "Rook", "Bishop", "Knight"][["q", "r", "b", "n"].indexOf(promotion)])
 })

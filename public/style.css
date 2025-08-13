@@ -452,10 +452,10 @@ input[type="range"]::-ms-thumb {
 }
 .options{
     float: left;
-    width:50%;
+    width:33.3333%;
     height:100%;
 }
-.analysisButton{
+.controls{
     width:100%;
     height:50%;
     line-height: 100%;
@@ -474,16 +474,6 @@ input[type="range"]::-ms-thumb {
 #toggleEngine{
     background-color: green;
 }
-.gameButton{
-    width:100%;
-    height:50%;
-    line-height: 100%;
-    font-size: 2vh;
-    text-decoration: solid;
-    text-align: center;
-    vertical-align: middle;
-    box-sizing: border-box;
-    border-bottom: 2px solid #373a40;
-    background-color: #1a1b1e;
-    color: #f1f3f5;
+#toggleTimers{
+    background-color: green;
 }
