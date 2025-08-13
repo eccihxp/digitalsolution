@@ -43,6 +43,7 @@ let mhBlack = []
 let runTimer = true
 let showAnalysis = true
 let playingEngine = true
+let boardActive = true
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
@@ -420,6 +421,8 @@ function gamestate(){
 function endGame(){
     if(["checkmate", "timeout", "forfeit"].includes(status)){
         timeFetch("stopTimer")
+        clearHighlights()
+        boardActive = false
         if(status=="timeout"){
             winner = (currentTime["wtime"]>currentTime["btime"] ? "White" : "Black")
         } else if(status=="forfeit"){
@@ -462,6 +465,8 @@ function endGame(){
         }, 500)
     } else if(["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].includes(status)){
         timeFetch("stopTimer")
+        clearHighlights()
+        boardActive = false
         $("#overlay").css("background-color", "yellow")
         let drawResponses = ["By Fifty Move Rule", "By Insufficient Material", "By Stalemate", "By Threefold Repetition", "By Agreement"]
         $("#midTitle").html("Draw")
@@ -524,61 +529,69 @@ function computer(){
     });
 }
 
-$("#board").on("click", ".pieceImg", function(){
-    let newSquare = true
+function clearHighlights(){
     $(".pieceImg").css("background-color", "transparent")
-    let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
-    for(let i=0;i<movableSquares.length;i++){
-        if(clickedSquare == movableSquares[i]["to"]){
-            newSquare = false
-            fetch("/makeMove", {
+    clickedSquare = ""
+    movableSquares = []
+}
+
+$("#board").on("click", ".pieceImg", function(){
+    if(boardActive==true){
+        let newSquare = true
+        $(".pieceImg").css("background-color", "transparent")
+        let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
+        for(let i=0;i<movableSquares.length;i++){
+            if(clickedSquare == movableSquares[i]["to"]){
+                newSquare = false
+                fetch("/makeMove", {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ moveMade:  clickedSquare})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    currentBoard = data.message
+                    updateBoard()
+                    addBoard()
+                    if(playingEngine){
+                        computer()
+                    } else{
+                        fetch("/rqFen", {
+                            method: "POST",
+                            headers: {
+                            "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ placehold:  false})
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            currentFEN = data.message
+                            timeFetch("switchTimer")
+                            analysis.postMessage("position fen " + currentFEN)
+                            analysis.postMessage("go depth 16")
+                        });
+                    }
+                });
+            }
+        }
+        if (newSquare = true){
+            fetch("/checkMoves", {
                 method: "POST",
                 headers: {
                 "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ moveMade:  clickedSquare})
+                },  
+                body: JSON.stringify({ selectedSquare:  clickedSquare})
             })
             .then(res => res.json())
             .then(data => {
-                currentBoard = data.message
-                updateBoard()
-                addBoard()
-                if(playingEngine){
-                    computer()
-                } else{
-                    fetch("/rqFen", {
-                        method: "POST",
-                        headers: {
-                        "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ placehold:  false})
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        currentFEN = data.message
-                        timeFetch("switchTimer")
-                        analysis.postMessage("position fen " + currentFEN)
-                        analysis.postMessage("go depth 16")
-                    });
+                movableSquares = data.message
+                for(let i=0;i<data.message.length;i++){
+                    $(".img" + data.message[i]["to"]).css("background-color", "red")
                 }
             });
         }
-    }
-    if (newSquare = true){
-        fetch("/checkMoves", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },  
-            body: JSON.stringify({ selectedSquare:  clickedSquare})
-        })
-        .then(res => res.json())
-        .then(data => {
-            movableSquares = data.message
-            for(let i=0;i<data.message.length;i++){
-                $(".img" + data.message[i]["to"]).css("background-color", "red")
-            }
-        });
     }
 })
 
@@ -586,32 +599,42 @@ $("#fback").on("mouseup", function(){
     displayedBoard = 0
     currentBoard = boardHistory[0]
     updateBoard()
+    clearHighlights()
+    boardActive = false
 })
 
 $("#back").on("mouseup", function(){
     displayedBoard = (displayedBoard==0 ? 0 : displayedBoard-1)
     currentBoard = boardHistory[displayedBoard]
     updateBoard()
+    clearHighlights()
+    boardActive = false
 })
 
 $("#fwd").on("mouseup", function(){
     displayedBoard = (displayedBoard==halfMoves ? displayedBoard : displayedBoard+1)
     currentBoard = boardHistory[displayedBoard]
     updateBoard()
+    clearHighlights()
+    boardActive = (displayedBoard==halfMoves ? true : false)
 })
 
 $("#ffwd").on("mouseup", function(){
     displayedBoard = halfMoves
     currentBoard = boardHistory[displayedBoard]
     updateBoard()
+    clearHighlights()
+    boardActive = (displayedBoard==halfMoves ? true : false)
 })
 
 $("#pause").on("mouseup", function(){
+    clearHighlights()
     for(let i=0;i<(halfMoves-displayedBoard);i++){
         setTimeout(() => {
             displayedBoard++
             currentBoard=boardHistory[displayedBoard]
             updateBoard()
+            boardActive = (displayedBoard==halfMoves ? true : false)
         }, 250*i);
     }
 })
@@ -668,6 +691,7 @@ $("#playWhite").on("mouseup", function(){
         whiteActive = 1
         updateBoard()
         timeFetch("initTimer")
+        boardActive = true
         $(".line").empty()
         $(".mhEntry").remove()
         $("#whiteTime").css("background-color", "#e9ecef")
@@ -743,6 +767,7 @@ $("#playBlack").on("mouseup", function(){
         whiteActive = 1
         updateBoard()
         timeFetch("initTimer")
+        boardActive = true
         $(".line").empty()
         $(".mhEntry").remove()
         $("#whiteTime").css("background-color", "#e9ecef")
@@ -763,6 +788,15 @@ $("#playBlack").on("mouseup", function(){
         displayedBoard = 0
     });
     playerIsWhite = false
+    $("#mid").css("pointer-events", "false")
+    $("#mid").css("z-index", "-100")
+    $("#mid").children().css("pointer-events", "false")
+    $("#mid").animate({
+        opacity: 0
+    }, {
+        duration: 100,
+        easing: "swing"
+    })
     $("#support").css("pointer-events", "false")
     $("#support").css("z-index", "-100")
     $("#support").children().css("pointer-events", "false")
@@ -802,7 +836,7 @@ $("#toggleAnalysis").on("mouseup", function(){
     $(".inEngineDetails").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
     $(".line").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
     $("#toggleAnalysis").html("Toggle Analysis: " + (showAnalysis == true ? "On" : "Off"))
-    $("#toggleAnalysis").css("background-color", (showAnalysis == true ? "green" : "red"))
+    $("#toggleAnalysis").css("background-color", (showAnalysis == true ? "green" : "#800000"))
     $("#evalLeft").css("opacity", (showAnalysis == true ? "100%" : "0%"))
     $("#board").css({"border-top-left-radius": (showAnalysis == true ? "0vh" : "1vh"), "border-bottom-left-radius": (showAnalysis == true ? "0vh" : "1vh")})
 })
@@ -810,7 +844,7 @@ $("#toggleAnalysis").on("mouseup", function(){
 $("#toggleEngine").on("mouseup", function(){
     playingEngine = !playingEngine
     $("#toggleEngine").html("Toggle Engine: " + (playingEngine == true ? "On" : "Off"))
-    $("#toggleEngine").css("background-color", (playingEngine == true ? "green" : "red"))
+    $("#toggleEngine").css("background-color", (playingEngine == true ? "green" : "#800000"))
 })
 
 $("#exportFen").on("mouseup", function(){
