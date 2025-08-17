@@ -107,6 +107,30 @@ app.post('/reset', (req, res) => {
     //board from the starting position of the default version of the game
 });
 
+app.post('/attackers', (req, res) => {
+    let attackers = [
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+        [[], [], [], [], [], [], [], []],
+    ]
+    for(let i=0; i<8; i++){
+        for(let j=0; j<8; j++){
+            if(req.body.playerPieces[i][j]==true){
+                attackers[i][j]=game.attackers(String.fromCharCode(97+j, 56-i), (req.body.playerIsWhite==true ? "b" : "w"))
+                console.log(attackers[i][j])
+            } else(
+                attackers[i][j] = []
+            )
+        }
+    }
+    res.json({attackers: attackers})
+});
+
 app.post('/gamestate', (req, res) => {
     res.json({message: (game.isCheckmate()==true ? "checkmate" : (game.isDrawByFiftyMoves()==true ? "fifty moves" : (game.isInsufficientMaterial()==true ? "insufficient material" : (game.isStalemate()==true ? "stalemate" : (game.isThreefoldRepetition()==true ? "threefold" : "normal")))))}); // <-- JSON response
 });

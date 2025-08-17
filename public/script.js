@@ -46,6 +46,16 @@ let playingEngine = true
 let showTimers = true
 let boardActive = true
 let promotion = "q"
+let playerPieces = [
+    [false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false],
+    [true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true]
+]
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
 
@@ -239,6 +249,7 @@ function updateBoard(){
         analysis.postMessage("go depth 16")
     });
     gamestate()
+    attackers()
 }
 
 async function timerUpdates() {
@@ -375,8 +386,8 @@ function initialisePage(){
     $("#mid").append("<div id='midSubtitle'>Choose Your Settings</div>").children().last().addClass("midlane")
     $("#mid").append("<div id='strengthTitle'>Strength: 20</div>").children().last().addClass("midlane")
     $("#mid").append("<input id='strengthInput' type='range' min='1' max='20' value='20' step='1' />").children().last().addClass("midlane slider")
-    $("#mid").append("<div id='minTitle'>Minutes: 30</div>").children().last().addClass("midlane")
-    $("#mid").append("<input id='minInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
+    $("#mid").append("<div id='minTitle'>Minutes: 5</div>").children().last().addClass("midlane")
+    $("#mid").append("<input id='minInput' type='range' min='0' max='60' step='1' value='5'/>").children().last().addClass("midlane slider")
     $("#mid").append("<div id='secTitle'>Seconds: 30</div>").children().last().addClass("midlane")
     $("#mid").append("<input id='secInput' type='range' min='0' max='60' step='1' />").children().last().addClass("midlane slider")
     $("#mid").append("<div id='incTitle'>Increment: 0s</div>").children().last().addClass("midlane")
@@ -405,7 +416,40 @@ function initialisePage(){
 
     $(".line").empty()
     $(".mhEntry").remove()
-}   
+}
+
+function attackers(){
+    console.log(playerIsWhite)
+    for(let i=0;i<8;i++){
+        for(let j=0;j<8;j++){
+            console.log(currentBoard[i][j])
+            if(playerIsWhite==true && Math.floor(currentBoard[i][j]/8)==1){
+                playerPieces[i][j]=true
+            } else if(playerIsWhite==false && Math.floor(currentBoard[i][j]/8)==2){
+                playerPieces[i][j]=true
+            } else{
+                playerPieces[i][j]=false
+            }
+        }
+    }
+    fetch(("/attackers"), {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({playerPieces: playerPieces, playerIsWhite: playerIsWhite})
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log(data.attackers)   
+        $(".pieceImg").css("background-color", "transparent")
+        for(let i=0;i<8;i++){
+            for(let j=0;j<8;j++){
+                $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor", (data.attackers[i][j].length==1 ? "yellow" : (data.attackers[i][j].length==2 ? "orange" : (data.attackers[i][j].length>2 ? "red" : "transparent"))))
+            }
+        }
+    });
+}
 
 function gamestate(){
     //"checkmate", "fifty moves", "insufficient material", "stalemate", "threefold", "normal", "timeout"
