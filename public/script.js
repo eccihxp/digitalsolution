@@ -203,27 +203,28 @@ function updateHistory(){
         },
         body: null
     })
-        .then(res => res.json())
-        .then(data => {
-            moveHistory = data.message
-            mhWhite = []
-            mhBlack = []
-            for(let i=0;i<moveHistory.length;i++){
-                if(i%2==0){
-                    mhWhite.push(moveHistory[i])
-                } else{
-                    mhBlack.push(moveHistory[i])
-                }
+    .then(res => res.json())
+    .then(data => {
+        moveHistory = data.message
+        mhWhite = []
+        mhBlack = []
+        for(let i=0;i<moveHistory.length;i++){
+            if(i%2==0){
+                mhWhite.push(moveHistory[i])
+            } else{
+                mhBlack.push(moveHistory[i])
             }
-            $(".historyColumn").empty()
-            $("#mhNumberColumn").empty()
-            mhBlack.map(function(cv, index, arr){
-                $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
-            })
-            mhWhite.map(function(cv, index, arr){
-                $("#mhNumberColumn").append("<div>" + (index+1) + "</div>").children().last().addClass("moveNumber")
-                $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
-            })
+        }
+        $(".historyColumn").empty()
+        $("#mhNumberColumn").empty()
+        mhBlack.map(function(cv, index, arr){
+            $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+        })
+        mhWhite.map(function(cv, index, arr){
+            $("#mhNumberColumn").append("<div>" + (index+1) + "</div>").children().last().addClass("moveNumber")
+            $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+        })
+        $("#moveHistoryContainer").scrollTop($("#moveHistoryContainer")[0].scrollHeight)
     });
 }
 
@@ -419,36 +420,38 @@ function initialisePage(){
 }
 
 function attackers(){
-    console.log(playerIsWhite)
-    for(let i=0;i<8;i++){
-        for(let j=0;j<8;j++){
-            console.log(currentBoard[i][j])
-            if(playerIsWhite==true && Math.floor(currentBoard[i][j]/8)==1){
-                playerPieces[i][j]=true
-            } else if(playerIsWhite==false && Math.floor(currentBoard[i][j]/8)==2){
-                playerPieces[i][j]=true
-            } else{
-                playerPieces[i][j]=false
-            }
-        }
-    }
-    fetch(("/attackers"), {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({playerPieces: playerPieces, playerIsWhite: playerIsWhite})
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log(data.attackers)   
-        $(".pieceImg").css("background-color", "transparent")
+    $(".pieceImg").css("background-color", "transparent")
+    if(showAnalysis==true){
         for(let i=0;i<8;i++){
             for(let j=0;j<8;j++){
-                $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor", (data.attackers[i][j].length==1 ? "yellow" : (data.attackers[i][j].length==2 ? "orange" : (data.attackers[i][j].length>2 ? "red" : "transparent"))))
+                console.log(currentBoard[i][j])
+                if(playerIsWhite==true && Math.floor(currentBoard[i][j]/8)==1){
+                    playerPieces[i][j]=true
+                } else if(playerIsWhite==false && Math.floor(currentBoard[i][j]/8)==2){
+                    playerPieces[i][j]=true
+                } else{
+                    playerPieces[i][j]=false
+                }
             }
         }
-    });
+        fetch(("/attackers"), {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({playerPieces: playerPieces, playerIsWhite: playerIsWhite})
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data.attackers)   
+            for(let i=0;i<8;i++){
+                for(let j=0;j<8;j++){
+                    $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor", (data.attackers[i][j].length==1 ? "yellow" : (data.attackers[i][j].length==2 ? "orange" : (data.attackers[i][j].length>2 ? "red" : "transparent"))))
+                }
+            }
+        });
+
+    }
 }
 
 function gamestate(){
@@ -519,7 +522,7 @@ function endGame(){
         $("#overlay").css("background-color", "yellow")
         let drawResponses = ["By Fifty Move Rule", "By Insufficient Material", "By Stalemate", "By Threefold Repetition", "By Agreement"]
         $("#midTitle").html("Draw")
-        $("#midSubtitle").html(drawResponses[["checkmate", "timeout", "forfeit"].indexOf(status)])
+        $("#midSubtitle").html(drawResponses[["fifty moves", "insufficient material", "stalemate", "threefold", "agreement"].indexOf(status)])
         $("#midTitle").css("background-color", "#1a1b1e") 
         $("#midSubtitle").css("background-color", "#1a1b1e")
         $("#midTitle").css("color", "#f1f3f5") 
@@ -636,6 +639,7 @@ $("#board").on("click", ".pieceImg", function(){
             .then(res => res.json())
             .then(data => {
                 movableSquares = data.message
+                attackers()
                 for(let i=0;i<data.message.length;i++){
                     $(".img" + data.message[i]["to"]).css("background-color", "red")
                 }
@@ -888,6 +892,7 @@ $("#toggleAnalysis").on("mouseup", function(){
     $("#toggleAnalysis").css("background-color", (showAnalysis == true ? "green" : "#800000"))
     $("#evalLeft").css("opacity", (showAnalysis == true ? "100%" : "0%"))
     $("#board").css({"border-top-left-radius": (showAnalysis == true ? "0vh" : "1vh"), "border-bottom-left-radius": (showAnalysis == true ? "0vh" : "1vh")})
+    attackers()
 })
 
 $("#toggleEngine").on("mouseup", function(){
