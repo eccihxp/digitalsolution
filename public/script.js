@@ -1,3 +1,45 @@
+//#region VARIABLES
+
+//#region Game Options
+
+let playingEngine = true
+//Boolean; Turns on and off the engine which plays against the player (if reactivated, the engine will resume play following a move)
+
+let promotion = "q"
+//String; Decides which piece a pawn will promote to; Q = Queen, R = Rook, B = Bishop, N = Knight
+
+let showAnalysis = true
+//Boolean; Turns on and off the engine analysis, statistics, lines, and analysis bar; Does not disable opponent engine
+
+let showTimers = true
+//Boolean; Toggles the visibility of the text in the timer boxes
+
+//#endregion
+
+//#region Timers
+
+let startingTime = {
+    wtime: 60000, //Integer: White's starting time
+    btime: 60000 //Integer: Black's starting time
+}
+//Object; Amount of time each side starts with; In milliseconds
+
+let currentTime = {
+    wtime: 60000, //Integer: White's remaining time
+    btime: 60000 //Integer: Black's remaining time
+}
+//Object; Amount of time each side has remaining
+
+let increment = 0
+//Integer; Amount of time added per move per sidel; In milliseconds 
+
+//#endregion
+
+//#region Game Info
+
+let currentFEN = ""
+//The current board position represented with Forsyth-Edwards Notation
+
 let currentBoard = [
     [21, 19, 20, 22, 17, 20, 19, 21],
     [18, 18, 18, 18, 18, 18, 18, 18],
@@ -8,44 +50,16 @@ let currentBoard = [
     [10, 10, 10, 10, 10, 10, 10, 10],
     [13, 11, 12, 14, 9, 12, 11, 13]
 ]
-let currentTime = {
-    wtime: 60000,
-    btime: 60000
-}
-let startingTime = {
-    wtime: 60000,
-    btime: 60000
-}
-let increment = 0
+//Array; Contains arrays of numbers; Denotes which piece is on each square; 0 if the square is empty; Otherwise uses method below
+//Step 1; Add 8 if the piece is white; Add 16 if the piece is black
+//Step 2; Add a number for what type of piece it is (King = 1, Pawn = 2, Knight = 3, Bishop = 4, Rook = 5, Queen = 6)
 
-let currentFEN = ""
-let boardHistory = [
-    [[21, 19, 20, 22, 17, 20, 19, 21],
-    [18, 18, 18, 18, 18, 18, 18, 18],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [10, 10, 10, 10, 10, 10, 10, 10],
-    [13, 11, 12, 14, 9, 12, 11, 13]]
-]
-let displayedBoard = 0
 let halfMoves = 0
-let playerIsWhite = true
-let winner = "White"
+//Integer; Counts the number of moves made, which each move by either side adding 1 to the counter
 
 let movableSquares = []
-let status = ""
+//Array; Contains strings; Denotes which squares the selected piece can move to
 
-let moveHistory = ""
-let mhWhite = []
-let mhBlack = []
-let runTimer = true
-let showAnalysis = true
-let playingEngine = true
-let showTimers = true
-let boardActive = true
-let promotion = "q"
 let playerPieces = [
     [false, false, false, false, false, false, false, false],
     [false, false, false, false, false, false, false, false],
@@ -56,13 +70,81 @@ let playerPieces = [
     [true, true, true, true, true, true, true, true],
     [true, true, true, true, true, true, true, true]
 ]
+//Array; Contains arrays of booleans; Similar structure to board arrays; Denotes whether each square on the board contains a piece belonging to the player
+
+let exclusion = ""
+//String; The squares the player's selected piece can move to
+
+//#endregion
+
+//#region End of Game
+
+let boardActive = true
+//Boolean; Allows/Disallows interaction with the board
+
+let runTimer = true
+//Boolean; Turns the timer on and off (Primarily for when menus are open)
+
+let playerIsWhite = true
+//Boolean; Denotes whether the user is playing white or black
+
+let status = ""
+//String; Used for checking whether the game has ended and if so through what method 
+//Normal value throughout game: "normal" 
+//Win/loss methods: "checkmate", "fifty moves", "forfeit", "timeout"
+//Draw Methods: "agreement", "insufficient material", "stalemate", "threefold"
+
+let winner = "White"
+//String; Denotes who won the game
+
+//#endregion
+
+//#region History
+
+let boardHistory = [
+    [[21, 19, 20, 22, 17, 20, 19, 21],
+    [18, 18, 18, 18, 18, 18, 18, 18],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [10, 10, 10, 10, 10, 10, 10, 10],
+    [13, 11, 12, 14, 9, 12, 11, 13]]
+]
+//Array; Contains multiple board arrays; All previous boards from the current game
+
+let displayedBoard = 0
+//Integer; Denotes which board is being displayed on the screen
+
+let mhBlack = []
+//Array; Contains strings; Move history for black in SAN
+
+let mhWhite = []
+//Array; Contains strings; Move history for white in SAN
+
+let moveHistory = ""
+//String; Move history for both sides for the current game in SAN
+
+//#endregion
+
+//#region Engines/Validation
 
 var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
+//Boolean; Checks whether WASM is supported by the device
+
+var analysis = new Worker(wasmSupported ? 'analysis.wasm.js' : 'analysis.js');
+//Web Worker; The engine that analyses the game
 
 var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
-var analysis = new Worker(wasmSupported ? 'analysis.wasm.js' : 'analysis.js');
+//Web Worker; The engine that plays against the player
 
-initialisePage()
+//#endregion
+
+//#endregion
+
+//#region FUNCTIONS
+
+//#region Initialisation
 
 $(document).ready(function(e){
     timeFetch("resetTimer") 
@@ -74,250 +156,7 @@ $(document).ready(function(e){
         body: JSON.stringify({ placehold:  false})
     })
 })
-
-stockfish.addEventListener('message', function (e) {
-    if(e.data === "uciok"){
-        stockfish.postMessage("ucinewgame");
-        stockfish.postMessage("isready");
-    }
-    else if(e.data === "readyok"){
-        stockfish.postMessage("position name startpos")
-        stockfish.postMessage("setoption name Skill Level value 20")
-    }
-    else if(e.data.includes("bestmove") == true){
-        fetch("/computerMove", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ moveMade: e.data.split(" ")[1]})
-        })
-        .then(res => res.json())
-        .then(data => {
-            currentBoard = data.message
-            updateBoard()
-            addBoard()
-            timeFetch("switchTimer")
-        });
-    }
-});
-
-stockfish.postMessage("uci");
-
-analysis.addEventListener('message', function (e) {
-    console.log(e.data);
-    if(e.data === "uciok"){
-        analysis.postMessage("ucinewgame");
-        analysis.postMessage("isready");
-    }
-    else if(e.data === "readyok"){
-        analysis.postMessage("position name startpos")
-        analysis.postMessage("setoption name MultiPV value 5")
-        analysis.postMessage("go depth 16")
-    }
-    else if(e.data.includes("info") == true){
-        let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
-        if(pv==1){
-            fetch("/rqSide", {
-                    method: "POST",
-                    headers: {
-                    "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({placehold: true})
-            })
-            .then(res => res.json())
-            .then(data => {
-                whiteActive = data.message
-            });
-            if(e.data.includes("cp") == true){
-                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100*whiteActive)
-                eval = eval.toPrecision(4).toString()
-                eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
-                let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
-                let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
-                let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
-                $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
-                $("#depth").html("<strong>Depth:</strong> " + depth)
-                if(e.data.split(" ")[e.data.split(" ").indexOf("depth")+1]>12){
-                    $("#evalScore").html((eval>=0 ? "+" : "") + eval)
-                    $("#evalLeftFill").animate({
-                        height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
-                        }, {
-                        duration: 50,
-                        easing: "swing"
-                    })
-                }
-            }
-            else if(e.data.includes("mate") == true){
-                $("#evalLeftFill").animate({
-                    height: (halfMoves%2==0 ? "100%" : "0%")
-                    }, {
-                    duration: 100,
-                    easing: "swing"
-                })
-            }
-        }
-        fetch("/history", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: null
-        })
-        .then(res => res.json())
-        .then(data => {
-            moveHistory = data.message
-        });
-        let lineMH = moveHistory.concat(e.data.split(" pv ")[1].split(" "))
-        fetch("/convert", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: JSON.stringify({line: lineMH})
-        })
-        .then(res => res.json())
-        .then(data => {
-            let lineOutput = data.message
-            let lineOutputString = "1. ";
-            let moveNo = 1
-            for(let i=1;i<lineOutput.length+1;i++){
-                if(i%2==1 && i!=1){
-                    moveNo++
-                    lineOutputString += " " + moveNo + ". "
-                }
-                lineOutputString += lineOutput[i-1] + " "
-            }
-            $("#line" + pv).html(lineOutputString)
-        });
-    }
-});
-
-analysis.postMessage("uci");
-
-function updateHistory(){
-    fetch("/history", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: null
-    })
-    .then(res => res.json())
-    .then(data => {
-        moveHistory = data.message
-        mhWhite = []
-        mhBlack = []
-        for(let i=0;i<moveHistory.length;i++){
-            if(i%2==0){
-                mhWhite.push(moveHistory[i])
-            } else{
-                mhBlack.push(moveHistory[i])
-            }
-        }
-        $(".historyColumn").empty()
-        $("#mhNumberColumn").empty()
-        mhBlack.map(function(cv, index, arr){
-            $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
-        })
-        mhWhite.map(function(cv, index, arr){
-            $("#mhNumberColumn").append("<div>" + (index+1) + "</div>").children().last().addClass("moveNumber")
-            $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
-        })
-        $("#moveHistoryContainer").scrollTop($("#moveHistoryContainer")[0].scrollHeight)
-    });
-}
-
-function updateBoard(){
-    for(let i=8;i>0;i--){
-        for(let j=0;j<8;j++){
-            $(".img" + String.fromCharCode(97+j) + i.toString()).attr("src", currentBoard[8-i][j] + ".png")
-        }
-    }
-    setTimeout(updateHistory(), 50)
-    updateHistory()
-    fetch("/rqFen", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ placehold:  false})
-    })
-    .then(res => res.json())
-    .then(data => {
-        currentFEN = data.message
-        analysis.postMessage("position fen " + currentFEN)
-        analysis.postMessage("go depth 16")
-    });
-    gamestate()
-    attackers()
-}
-
-async function timerUpdates() {
-    while (runTimer) {
-        timeFetch("updateTimer")
-        await new Promise(resolve => setTimeout(resolve, 1000/60))
-    }
-} 
-timerUpdates();
-
-function timeFetch(label){
-    fetch(("/" + label), {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({placehold: true})
-    })
-        .then(res => res.json())
-        .then(data => {
-            if(label=="switchTimer"){
-                if(halfMoves%2==1){
-                    startingTime["wtime"]+=increment
-                } else{
-                    startingTime["btime"]+=increment
-                }
-            }
-            currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
-            currentTime["btime"] = (startingTime["btime"]-data.btime)
-            assignTime()
-    });
-}
-
-function assignTime(){
-    if(currentTime["wtime"]<=0 || currentTime["btime"]<=0){
-        fetch(("/stopTimer"), {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json"
-            },
-            body: JSON.stringify({placehold: true})
-        })
-            .then(res => res.json())
-            .then(data => {
-                currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
-                currentTime["btime"] = (startingTime["btime"]-data.btime)
-                if(currentTime["wtime"]<=0){
-                    $("#whiteTime").html("00:00.000")
-                    $("#whiteTime").css("background-color", "red")
-                    status = "timeout"
-                    endGame()
-                } else{
-                    $("#blackTime").html("00:00.000")
-                    $("#blackTime").css("background-color", "red")
-                    status = "timeout"
-                    endGame()
-                }
-                runTimer = false
-        });
-    } else{
-        let m = {w: Math.floor(currentTime["wtime"]/60000), b: Math.floor(currentTime["btime"]/60000)}
-        let s = {w: Math.floor(Math.floor(currentTime["wtime"]%60000)/1000), b: Math.floor(Math.floor(currentTime["btime"]%60000)/1000)}
-        let ms = {w: Math.floor(currentTime["wtime"]%1000), b: Math.floor(currentTime["btime"]%1000)}
-        $("#whiteTime").html((m.w<10 ? "0"+m.w : m.w ) + ":" + (s.w<10 ? "0"+s.w : s.w) + "." + (ms.w.toString().length==3 ? ms.w : (ms.w.toString().length==2? "0" + ms.w : "00" + ms.w)))
-        $("#blackTime").html((m.b<10 ? "0"+m.b : m.b ) + ":" + (s.b<10 ? "0"+s.b : s.b) + "." + (ms.b.toString().length==3 ? ms.b : (ms.b.toString().length==2? "0" + ms.b : "00" + ms.b)))
-    }
-}
+//Runs upon loading; Tells the server to reset the game and timers; Resets the page and all significant variables
 
 function initialisePage(){
     $("body").append("<div id='banner'></div>")
@@ -418,9 +257,399 @@ function initialisePage(){
     $(".line").empty()
     $(".mhEntry").remove()
 }
+initialisePage()
+//Initialises page, resetting HTML and CSS
+
+//#endregion
+
+//#region Engines
+
+analysis.addEventListener('message', function (e) {
+    console.log(e.data);
+    if(e.data === "uciok"){
+        analysis.postMessage("ucinewgame");
+        analysis.postMessage("isready");
+    }
+    else if(e.data === "readyok"){
+        analysis.postMessage("position name startpos")
+        analysis.postMessage("setoption name MultiPV value 5")
+        analysis.postMessage("go depth 16")
+    }
+    else if(e.data.includes("info") == true){
+        let pv = e.data.split(" ")[e.data.split(" ").indexOf("multipv")+1]
+        if(pv==1){
+            fetch("/rqSide", {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({placehold: true})
+            })
+            .then(res => res.json())
+            .then(data => {
+                whiteActive = data.message
+            });
+            if(e.data.includes("cp") == true){
+                let eval = ((e.data.split(" ")[e.data.split(" ").indexOf("cp") + 1])/100*whiteActive)
+                eval = eval.toPrecision(4).toString()
+                eval = eval.padEnd(9, "0").substring(0, eval.toString().includes("-")==true ? 6 : 5)
+                let depth = (e.data.split(" ")[e.data.split(" ").indexOf("depth") + 1])
+                let nps = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nps") + 1]/1000)
+                let nodes = Math.round(e.data.split(" ")[e.data.split(" ").indexOf("nodes") + 1]/1000)
+                $("#nodeDetails").html(nodes + "k nodes at " + nps + "k/s")
+                $("#depth").html("<strong>Depth:</strong> " + depth)
+                if(e.data.split(" ")[e.data.split(" ").indexOf("depth")+1]>12){
+                    $("#evalScore").html((eval>=0 ? "+" : "") + eval)
+                    $("#evalLeftFill").animate({
+                        height: ((50+ (((-0.5*eval)/(Math.sqrt(400+Math.pow(eval, 2)))))*100).toString() + "%")
+                        }, {
+                        duration: 50,
+                        easing: "swing"
+                    })
+                }
+            }
+            else if(e.data.includes("mate") == true){
+                $("#evalLeftFill").animate({
+                    height: (halfMoves%2==0 ? "100%" : "0%")
+                    }, {
+                    duration: 100,
+                    easing: "swing"
+                })
+            }
+        }
+        fetch("/history", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: null
+        })
+        .then(res => res.json())
+        .then(data => {
+            moveHistory = data.message
+        });
+        let lineMH = moveHistory.concat(e.data.split(" pv ")[1].split(" "))
+        fetch("/convert", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({line: lineMH})
+        })
+        .then(res => res.json())
+        .then(data => {
+            let lineOutput = data.message
+            let lineOutputString = "1. ";
+            let moveNo = 1
+            for(let i=1;i<lineOutput.length+1;i++){
+                if(i%2==1 && i!=1){
+                    moveNo++
+                    lineOutputString += " " + moveNo + ". "
+                }
+                lineOutputString += lineOutput[i-1] + " "
+            }
+            $("#line" + pv).html(lineOutputString)
+        });
+    }
+});
+//Processes all messages sent from the analysis engine
+
+analysis.postMessage("uci");
+//Ensures the analysis engine is working
+
+stockfish.addEventListener('message', function (e) {
+    if(e.data === "uciok"){
+        stockfish.postMessage("ucinewgame");
+        stockfish.postMessage("isready");
+    }
+    else if(e.data === "readyok"){
+        stockfish.postMessage("position name startpos")
+        stockfish.postMessage("setoption name Skill Level value 20")
+    }
+    else if(e.data.includes("bestmove") == true){
+        fetch("/computerMove", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ moveMade: e.data.split(" ")[1]})
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentBoard = data.message
+            updateBoard()
+            addBoard()
+            timeFetch("switchTimer")
+        });
+    }
+});
+//Processes all messages sent from the opponent engine
+
+stockfish.postMessage("uci");
+//Ensures the opponent engine is working
+
+function computer(){
+    fetch("/rqFen", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentFEN = data.message
+        timeFetch("switchTimer")
+        stockfish.postMessage("position fen " + currentFEN)
+        stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
+        analysis.postMessage("position fen " + currentFEN)
+        analysis.postMessage("go depth 16")
+    });
+}
+//Called whenever the opponent engine needs to move; Updates FEN and starts opponent engine and analysis
+
+//#endregion
+
+//#region Timer 
+
+function assignTime(){
+    if(currentTime["wtime"]<=0 || currentTime["btime"]<=0){
+        fetch(("/stopTimer"), {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({placehold: true})
+        })
+            .then(res => res.json())
+            .then(data => {
+                currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
+                currentTime["btime"] = (startingTime["btime"]-data.btime)
+                if(currentTime["wtime"]<=0){
+                    $("#whiteTime").html("00:00.000")
+                    $("#whiteTime").css("background-color", "red")
+                    status = "timeout"
+                    endGame()
+                } else{
+                    $("#blackTime").html("00:00.000")
+                    $("#blackTime").css("background-color", "red")
+                    status = "timeout"
+                    endGame()
+                }
+                runTimer = false
+        });
+    } else{
+        let m = {w: Math.floor(currentTime["wtime"]/60000), b: Math.floor(currentTime["btime"]/60000)}
+        let s = {w: Math.floor(Math.floor(currentTime["wtime"]%60000)/1000), b: Math.floor(Math.floor(currentTime["btime"]%60000)/1000)}
+        let ms = {w: Math.floor(currentTime["wtime"]%1000), b: Math.floor(currentTime["btime"]%1000)}
+        $("#whiteTime").html((m.w<10 ? "0"+m.w : m.w ) + ":" + (s.w<10 ? "0"+s.w : s.w) + "." + (ms.w.toString().length==3 ? ms.w : (ms.w.toString().length==2? "0" + ms.w : "00" + ms.w)))
+        $("#blackTime").html((m.b<10 ? "0"+m.b : m.b ) + ":" + (s.b<10 ? "0"+s.b : s.b) + "." + (ms.b.toString().length==3 ? ms.b : (ms.b.toString().length==2? "0" + ms.b : "00" + ms.b)))
+    }
+}
+//Displays the remaining time for each side in their respective timer text box
+
+function timeFetch(label){
+    fetch(("/" + label), {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({placehold: true})
+    })
+        .then(res => res.json())
+        .then(data => {
+            if(label=="switchTimer"){
+                if(halfMoves%2==1){
+                    startingTime["wtime"]+=increment
+                } else{
+                    startingTime["btime"]+=increment
+                }
+            }
+            currentTime["wtime"] = (startingTime["wtime"]-data.wtime)
+            currentTime["btime"] = (startingTime["btime"]-data.btime)
+            assignTime()
+    });
+}
+//Sends the server information about changes to timer (stop, start, reset, etc) and updates time
+
+async function timerUpdates() {
+    while (runTimer) {
+        timeFetch("updateTimer")
+        await new Promise(resolve => setTimeout(resolve, 1000/60))
+    }
+} timerUpdates();
+//Updates the timer 60 times a second
+
+//#endregion
+
+//#region History
+
+function addBoard(){
+    boardHistory.push(currentBoard)
+    displayedBoard++;
+    halfMoves++;
+}
+//Adds the current board to history when a move is played
+
+function updateHistory(){
+    fetch("/history", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: null
+    })
+    .then(res => res.json())
+    .then(data => {
+        moveHistory = data.message
+        mhWhite = []
+        mhBlack = []
+        for(let i=0;i<moveHistory.length;i++){
+            if(i%2==0){
+                mhWhite.push(moveHistory[i])
+            } else{
+                mhBlack.push(moveHistory[i])
+            }
+        }
+        $(".historyColumn").empty()
+        $("#mhNumberColumn").empty()
+        mhBlack.map(function(cv, index, arr){
+            $("#moveHistoryRight").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+        })
+        mhWhite.map(function(cv, index, arr){
+            $("#mhNumberColumn").append("<div>" + (index+1) + "</div>").children().last().addClass("moveNumber")
+            $("#moveHistoryLeft").append("<div>" + cv + "</div>").children().last().addClass("mhEntry")
+        })
+        $("#moveHistoryContainer").scrollTop($("#moveHistoryContainer")[0].scrollHeight)
+    });
+}
+//Updates the move history and displays this in the history box
+
+//#endregion
+
+//#region Move Handling
+
+$("#board").on("click", ".pieceImg", function(){
+    if(boardActive==true){
+        let newSquare = true
+        let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
+        for(let i=0;i<movableSquares.length;i++){
+            if(clickedSquare == movableSquares[i]["to"]){
+                newSquare = false
+                fetch("/makeMove", {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ moveMade:  clickedSquare, promoteTo: promotion})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    currentBoard = data.message
+                    updateBoard()
+                    addBoard()
+                    if(playingEngine){
+                        computer()
+                    } else{
+                        fetch("/rqFen", {
+                            method: "POST",
+                            headers: {
+                            "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ placehold:  false})
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            currentFEN = data.message
+                            timeFetch("switchTimer")
+                            analysis.postMessage("position fen " + currentFEN)
+                            analysis.postMessage("go depth 16")
+                        });
+                    }
+                });
+            }
+        }
+        if (newSquare == true){
+            fetch("/checkMoves", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },  
+                body: JSON.stringify({ selectedSquare:  clickedSquare})
+            })
+            .then(res => res.json())
+            .then(data => {
+                movableSquares = data.message
+                console.log(movableSquares)
+                attackers()
+                for(let i=0;i<movableSquares.length;i++){
+                    exclusion = movableSquares.map(id => (".img" + `${id.to}`)).join(", ")
+                    console.log(exclusion)
+                    $(".img" + data.message[i]["to"]).css("background-color", "red")
+                    $(".pieceImg").not(exclusion).css("background-color", "transparent")
+                }
+            });
+        }
+        else{
+            fetch(("/attackers"), {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify({playerPieces: playerPieces, playerIsWhite: playerIsWhite})
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data.attackers)   
+                for(let i=0;i<8;i++){
+                    for(let j=0;j<8;j++){
+                        $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor", (data.attackers[i][j].length==1 ? "yellow" : (data.attackers[i][j].length==2 ? "orange" : (data.attackers[i][j].length>2 ? "red" : $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor")))))
+                    }
+                }
+            });
+            exclusion = ""
+            $(".pieceImg").not(exclusion).css("background-color", "transparent")
+        }
+    }
+})
+//Function called when any square on the board is clicked
+
+function updateBoard(){
+    for(let i=8;i>0;i--){
+        for(let j=0;j<8;j++){
+            $(".img" + String.fromCharCode(97+j) + i.toString()).attr("src", currentBoard[8-i][j] + ".png")
+        }
+    }
+    setTimeout(updateHistory(), 50)
+    updateHistory()
+    fetch("/rqFen", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ placehold:  false})
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentFEN = data.message
+        analysis.postMessage("position fen " + currentFEN)
+        analysis.postMessage("go depth 16")
+    });
+    gamestate()
+    $(".pieceImg").not(exclusion).css("background-color", "transparent")
+    attackers()
+}
+//Runs multiple other functions, updates board display, switches timers, and updates engines
+
+function clearHighlights(){
+    console.log("clearing highlights")
+    $(".pieceImg").css("background-color", "transparent")
+    clickedSquare = ""
+    movableSquares = []
+}
+//Clears all highlighting on the board for threats or movable squares
 
 function attackers(){
-    $(".pieceImg").css("background-color", "transparent")
     if(showAnalysis==true){
         for(let i=0;i<8;i++){
             for(let j=0;j<8;j++){
@@ -446,16 +675,16 @@ function attackers(){
             console.log(data.attackers)   
             for(let i=0;i<8;i++){
                 for(let j=0;j<8;j++){
-                    $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor", (data.attackers[i][j].length==1 ? "yellow" : (data.attackers[i][j].length==2 ? "orange" : (data.attackers[i][j].length>2 ? "red" : "transparent"))))
+                    $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor", (data.attackers[i][j].length==1 ? "yellow" : (data.attackers[i][j].length==2 ? "orange" : (data.attackers[i][j].length>2 ? "red" : $(".img" + String.fromCharCode(97+j, 56-i)).css("backgroundColor")))))
                 }
             }
         });
 
     }
 }
+//Adds yellow, orange, and red highlights respectively if a player's piece is attacked 1, 2, or 3+ times
 
 function gamestate(){
-    //"checkmate", "fifty moves", "insufficient material", "stalemate", "threefold", "normal", "timeout"
     fetch(("/gamestate"), {
         method: "POST",
         headers: {
@@ -469,6 +698,7 @@ function gamestate(){
         endGame()
     });
 }
+//Checks whether the game is progressing normally, is drawn, or is over
 
 function endGame(){
     if(["checkmate", "timeout", "forfeit"].includes(status)){
@@ -555,98 +785,11 @@ function endGame(){
         }, 500)
     }
 }
+//Ends the game if it is drawn or is over
 
-function addBoard(){
-    boardHistory.push(currentBoard)
-    displayedBoard++;
-    halfMoves++;
-}
+//#endregion
 
-function computer(){
-    fetch("/rqFen", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ placehold:  false})
-    })
-    .then(res => res.json())
-    .then(data => {
-        currentFEN = data.message
-        timeFetch("switchTimer")
-        stockfish.postMessage("position fen " + currentFEN)
-        stockfish.postMessage("go wtime " + String(currentTime["wtime"]) + " btime " + String(currentTime["btime"]))
-        analysis.postMessage("position fen " + currentFEN)
-        analysis.postMessage("go depth 16")
-    });
-}
-
-function clearHighlights(){
-    $(".pieceImg").css("background-color", "transparent")
-    clickedSquare = ""
-    movableSquares = []
-}
-
-$("#board").on("click", ".pieceImg", function(){
-    if(boardActive==true){
-        let newSquare = true
-        $(".pieceImg").css("background-color", "transparent")
-        let clickedSquare = $(this).attr("class").split(" ")[1].substring(3,5)
-        for(let i=0;i<movableSquares.length;i++){
-            if(clickedSquare == movableSquares[i]["to"]){
-                newSquare = false
-                fetch("/makeMove", {
-                    method: "POST",
-                    headers: {
-                    "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ moveMade:  clickedSquare, promoteTo: promotion})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    currentBoard = data.message
-                    updateBoard()
-                    addBoard()
-                    if(playingEngine){
-                        computer()
-                    } else{
-                        fetch("/rqFen", {
-                            method: "POST",
-                            headers: {
-                            "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({ placehold:  false})
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            currentFEN = data.message
-                            timeFetch("switchTimer")
-                            analysis.postMessage("position fen " + currentFEN)
-                            analysis.postMessage("go depth 16")
-                        });
-                    }
-                });
-            }
-        }
-        if (newSquare = true){
-            fetch("/checkMoves", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },  
-                body: JSON.stringify({ selectedSquare:  clickedSquare})
-            })
-            .then(res => res.json())
-            .then(data => {
-                movableSquares = data.message
-                attackers()
-                for(let i=0;i<data.message.length;i++){
-                    $(".img" + data.message[i]["to"]).css("background-color", "red")
-                }
-            });
-        }
-    }
-})
+//#region View Boards
 
 $("#fback").on("mouseup", function(){
     displayedBoard = 0
@@ -692,9 +835,13 @@ $("#pause").on("mouseup", function(){
     }
 })
 
+//#endregion
+
+//#region Pop-up Options
+
 $("#strengthInput").on("change", function(){
-    stockfish.postMessage("setoption name Skill Level value ") + this.value
-    $("#strengthTitle").html("Strength: " + this.value)
+    stockfish.postMessage("setoption name Skill Level value " + $("#strengthInput").val())
+    $("#strengthTitle").html("Strength: " + $("#strengthInput").val())
 })
 
 $("#minInput").on("change", function(){
@@ -719,6 +866,7 @@ $("#incInput").on("change", function(){
 })
 
 $("#playWhite").on("mouseup", function(){
+    console.log("SDLFKJL:SDKJFSKLDFSHJKLLKSDFHLKJ")
     fetch("/reset", {
         method: "POST",
         headers: {
@@ -884,8 +1032,13 @@ $("#playBlack").on("mouseup", function(){
     });
 })
 
+//#endregion
+
+//#region Options Panel
+
 $("#toggleAnalysis").on("mouseup", function(){
     showAnalysis = !showAnalysis
+    $(".pieceImg").not(exclusion).css("background-color", "transparent")
     $(".inEngineDetails").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
     $(".line").css("color", (showAnalysis == true ? "#f1f3f5" : "transparent"))
     $("#toggleAnalysis").html("Toggle Analysis: " + (showAnalysis == true ? "On" : "Off"))
@@ -894,12 +1047,14 @@ $("#toggleAnalysis").on("mouseup", function(){
     $("#board").css({"border-top-left-radius": (showAnalysis == true ? "0vh" : "1vh"), "border-bottom-left-radius": (showAnalysis == true ? "0vh" : "1vh")})
     attackers()
 })
+//Turns on and off analysis and attacker displays
 
 $("#toggleEngine").on("mouseup", function(){
     playingEngine = !playingEngine
     $("#toggleEngine").html("Toggle Engine: " + (playingEngine == true ? "On" : "Off"))
     $("#toggleEngine").css("background-color", (playingEngine == true ? "green" : "#800000"))
 })
+//Turns on and off the engine which plays against the player
 
 $("#toggleTimers").on("mouseup", function(){
     showTimers = !showTimers
@@ -908,6 +1063,7 @@ $("#toggleTimers").on("mouseup", function(){
     $("#toggleTimers").html("Show Timers: " + (showTimers == true ? "On" : "Off"))
     $("#toggleTimers").css("background-color", (showTimers == true ? "green" : "#800000"))
 })
+//Shows or hides time remaining per side
 
 $("#exportFen").on("mouseup", function(){
     fetch("/rqFen", {
@@ -923,6 +1079,7 @@ $("#exportFen").on("mouseup", function(){
         alert("Copied the text: " + data.message)
     });
 })
+//Copies the current FEN to clipboard
 
 $("#surrender").on("mouseup", function(){
     if(playingEngine == false){
@@ -935,8 +1092,14 @@ $("#surrender").on("mouseup", function(){
         endGame()
     }
 })
+//Ends the game immediately as the player's loss
 
 $("#pawnPromotion").on("mouseup", function(){
     promotion = ["r", "b", "n", "q"][["q", "r", "b", "n"].indexOf(promotion)]
     $("#pawnPromotion").html("Pawn Promotes To: " + ["Queen", "Rook", "Bishop", "Knight"][["q", "r", "b", "n"].indexOf(promotion)])
 })
+//Cycles between which piece to promote pawns to
+
+//#endregion
+
+//#endregion
