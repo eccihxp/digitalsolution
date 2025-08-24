@@ -159,9 +159,9 @@ $(document).ready(function(e){
 //Runs upon loading; Tells the server to reset the game and timers; Resets the page and all significant variables
 
 function initialisePage(){
-    $("body").append("<div id='banner'></div>");
-    $("#banner").append("<div id='bannerText'>Chess Trainer</div>");
-    $("#banner").append("<a id='bannerLink' href='https://github.com/nmrugg/stockfish.js' target='_blank'>Stockfish ⮺</div>");
+    $("body").append("<div id='top'></div>");
+    $("#top").append("<div id='topText'>Chess Trainer</div>");
+    $("#top").append("<a id='topLink' href='https://github.com/nmrugg/stockfish.js' target='_blank'>Stockfish ⮺</div>");
     $("body").append("<div id='boardContainer'></div>");
     $("#boardContainer").append("<div id='vspacer1'></div>").children().last().addClass("boardAlignH vspacer");
     $("#boardContainer").append("<div id='evalLeft'></div>").children().last().addClass("boardAlignH");
