@@ -799,6 +799,7 @@ $("#fback").on("mouseup", function(){
     clearHighlights();
     boardActive = false;
 });
+//Go to first position
 
 $("#back").on("mouseup", function(){
     displayedBoard = (displayedBoard==0 ? 0 : displayedBoard-1);
@@ -807,6 +808,7 @@ $("#back").on("mouseup", function(){
     clearHighlights();
     boardActive = false;
 });
+//Go to previous position
 
 $("#fwd").on("mouseup", function(){
     displayedBoard = (displayedBoard==halfMoves ? displayedBoard : displayedBoard+1);
@@ -815,6 +817,7 @@ $("#fwd").on("mouseup", function(){
     clearHighlights();
     boardActive = (displayedBoard==halfMoves ? true : false);
 });
+//Go to next position
 
 $("#ffwd").on("mouseup", function(){
     displayedBoard = halfMoves;
@@ -823,6 +826,7 @@ $("#ffwd").on("mouseup", function(){
     clearHighlights();
     boardActive = (displayedBoard==halfMoves ? true : false);
 });
+//Go to newest positions
 
 $("#pause").on("mouseup", function(){
     clearHighlights();
@@ -835,6 +839,7 @@ $("#pause").on("mouseup", function(){
         }, 250*i);
     };
 });
+//Step through all positions after the current
 
 //#endregion
 
@@ -844,6 +849,7 @@ $("#strengthInput").on("change", function(){
     stockfish.postMessage("setoption name Skill Level value " + $("#strengthInput").val());
     $("#strengthTitle").html("Strength: " + $("#strengthInput").val());
 });
+//Strength; Skill level of engine
 
 $("#minInput").on("change", function(){
     $("#minTitle").html("Minutes: " + this.value);
@@ -852,6 +858,7 @@ $("#minInput").on("change", function(){
     startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000);
     startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000);
 });
+//Minutes each side start with
 
 $("#secInput").on("change", function(){
     $("#secTitle").html("Seconds: " + this.value);
@@ -860,11 +867,13 @@ $("#secInput").on("change", function(){
     startingTime.wtime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000);
     startingTime.btime = (parseInt($("#minInput").val())*60000+parseInt($("#secInput").val())*1000);
 });
+//Seconds each side starts with; added to minutes
 
 $("#incInput").on("change", function(){
     $("#incTitle").html("Increment: " + this.value + "s");
     increment = this.value*1000;
 });
+//Increments; Time added per move in seconds
 
 $("#playWhite").on("mouseup", function(){
     fetch("/reset", {
@@ -941,6 +950,7 @@ $("#playWhite").on("mouseup", function(){
         };
     };
 });
+//Play as white
 
 $("#playBlack").on("mouseup", function(){
     fetch("/reset", {
@@ -1031,6 +1041,7 @@ $("#playBlack").on("mouseup", function(){
         analysis.postMessage("go depth 16");
     });
 });
+//Play as Black
 
 //#endregion
 
